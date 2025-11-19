@@ -11,6 +11,5 @@ export interface User {
   groupIds: string[];
   companyIds: string[];
 
-  // для json-server авторизації (не обов'язково в UI)
   password?: string;
 }

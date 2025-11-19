@@ -1,6 +1,7 @@
 // src/components/Screen.tsx
 import React from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, ViewStyle } from 'react-native';
+import { SafeAreaView, StyleSheet, ViewStyle } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { usePrefs } from '../context/PrefsContext';
 import { colors } from '../theme/colors';
 
@@ -17,14 +18,10 @@ export const Screen: React.FC<ScreenProps> = ({ children, style }) => {
       style={[
         styles.container,
         { backgroundColor: darkMode ? colors.background : '#ffffff' },
+        style,
       ]}
     >
-      <StatusBar
-        hidden
-        translucent
-        backgroundColor="transparent"
-        barStyle={darkMode ? 'light-content' : 'dark-content'}
-      />
+      <StatusBar hidden />
       {children}
     </SafeAreaView>
   );

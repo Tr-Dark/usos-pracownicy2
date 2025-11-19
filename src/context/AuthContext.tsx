@@ -11,6 +11,11 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (updates: {
+    name?: string;
+    position?: string;
+    password?: string;
+  }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -59,7 +64,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (name: string, email: string, password: string) => {
-    // Чи існує вже користувач?
     const { data: existing } = await api.get<User[]>('/users', { params: { email } });
     if (existing.length > 0) {
       throw new Error('Użytkownik z takim emailem już istnieje');
@@ -90,8 +94,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await persist(null, null);
   };
 
+  const updateProfile = async (updates: {
+    name?: string;
+    position?: string;
+    password?: string;
+  }) => {
+    if (!user) return;
+
+    const payload: Partial<User> = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.position !== undefined) payload.position = updates.position;
+    if (updates.password !== undefined) (payload as any).password = updates.password;
+
+    const { data } = await api.patch<User>(`/users/${user.id}`, payload);
+
+    const merged: User = { ...user, ...data };
+    setUser(merged);
+    if (token) {
+      await persist(merged, token);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, register, logout, updateProfile }}
+    >
       {children}
     </AuthContext.Provider>
   );

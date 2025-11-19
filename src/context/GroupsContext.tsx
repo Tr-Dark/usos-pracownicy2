@@ -40,23 +40,45 @@ export const GroupsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     refresh();
   }, []);
 
-  const addUserToGroup = async (email: string, groupId: string) => {
-    const userToAdd = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!userToAdd) {
-      throw new Error('Użytkownik nie znaleziony');
-    }
-    if (userToAdd.groupIds.includes(groupId)) {
-      throw new Error('Użytkownik już jest w tej grupie');
-    }
+const addUserToGroup = async (email: string, groupId: string) => {
+  const emailNorm = email.toLowerCase().trim();
 
-    const updated = {
-      ...userToAdd,
-      groupIds: [...userToAdd.groupIds, groupId],
-    };
+  const userToAdd = users.find(
+    u => u.email.toLowerCase() === emailNorm
+  );
 
-    await api.patch(`/users/${userToAdd.id}`, { groupIds: updated.groupIds });
-    setUsers(prev => prev.map(u => (u.id === userToAdd.id ? updated : u)));
+  if (!userToAdd) {
+    throw new Error('Użytkownik nie znaleziony (sprawdź email)');
+  }
+
+  const group = groups.find(g => g.id === groupId);
+  if (!group) {
+    throw new Error('Grupa nie istnieje');
+  }
+
+  const nextGroupIds = userToAdd.groupIds.includes(groupId)
+    ? userToAdd.groupIds
+    : [...userToAdd.groupIds, groupId];
+
+  const nextCompanyIds = group.company
+    ? Array.from(
+        new Set([...(userToAdd.companyIds || []), group.company])
+      )
+    : userToAdd.companyIds || [];
+
+  const updated = {
+    ...userToAdd,
+    groupIds: nextGroupIds,
+    companyIds: nextCompanyIds,
   };
+
+  await api.patch(`/users/${userToAdd.id}`, {
+    groupIds: nextGroupIds,
+    companyIds: nextCompanyIds,
+  });
+
+  setUsers(prev => prev.map(u => (u.id === userToAdd.id ? updated : u)));
+};
 
   let visibleGroups: Group[] = [];
   if (user) {

@@ -96,7 +96,7 @@ const RootNavigator = () => {
   const { darkMode } = usePrefs();
 
   if (loading) {
-    return null; // тут можна показати Splash/Loader
+    return null; 
   }
 
   const baseTheme = darkMode ? DarkTheme : DefaultTheme;

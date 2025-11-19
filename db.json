@@ -105,6 +105,36 @@
         "c3"
       ],
       "password": "admin123"
+    },
+    {
+      "id": "1763511642370",
+      "name": "Roman Vyshnevskyi",
+      "email": "roma@gmail.com",
+      "avatar": "https://i.pravatar.cc/150?u=roma@gmail.com",
+      "position": "Junior",
+      "roles": [
+        "user"
+      ],
+      "groupIds": [
+        "g3"
+      ],
+      "companyIds": [
+        "NovaSoft"
+      ],
+      "password": "123"
+    },
+    {
+      "id": "1763513916432",
+      "name": "Adrian",
+      "email": "adrian@com",
+      "avatar": "https://i.pravatar.cc/150?u=adrian@com",
+      "position": "Junior",
+      "roles": [
+        "user"
+      ],
+      "groupIds": [],
+      "companyIds": [],
+      "password": "123"
     }
   ],
   "groups": [
@@ -190,6 +220,27 @@
       "toUserId": "u4",
       "text": "Hejka",
       "timestamp": "2025-11-19T00:05:58.944Z"
+    },
+    {
+      "id": "1763511748332",
+      "fromUserId": "u6",
+      "toUserId": "u4",
+      "text": "Wszisko okej?",
+      "timestamp": "2025-11-19T00:22:28.332Z"
+    },
+    {
+      "id": "1763513129132",
+      "fromUserId": "u2",
+      "toUserId": "u5",
+      "text": "Hej!",
+      "timestamp": "2025-11-19T00:45:29.132Z"
+    },
+    {
+      "id": "1763513372021",
+      "fromUserId": "u2",
+      "toUserId": "u6",
+      "text": "Mam problem!",
+      "timestamp": "2025-11-19T00:49:32.022Z"
     }
   ],
   "tasks": [

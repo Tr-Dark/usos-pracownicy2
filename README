@@ -1,0 +1,10 @@
+npm install
+npx expo install react react-native
+npx expo install @react-native-async-storage/async-storage
+npx expo install react-native-safe-area-context
+npx expo install react-native-screens
+npx expo install @expo/vector-icons
+npx expo install @react-navigation/native @react-navigation/bottom-tabs @react-navigation/native-stack
+
+npx expo start -c 
+npm run server

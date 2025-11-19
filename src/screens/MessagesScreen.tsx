@@ -1,5 +1,5 @@
 // src/screens/MessagesScreen.tsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -30,6 +30,7 @@ const MessagesScreen: React.FC = () => {
   const { fontSize } = usePrefs();
   const [text, setText] = useState('');
 
+  // всі співробітники з моїх груп
   const coworkers: User[] = useMemo(() => {
     if (!me) return [];
     const myGroupIds = visibleGroups.map(g => g.id);
@@ -50,7 +51,7 @@ const MessagesScreen: React.FC = () => {
     [coworkers, activeChatUserId]
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!activeChatUserId && coworkers[0]) {
       setActiveChatUserId(coworkers[0].id);
     }
@@ -97,38 +98,49 @@ const MessagesScreen: React.FC = () => {
             Wiadomości
           </Text>
 
-          {/* Горизонтальний список користувачів */}
+          {activeUser && (
+            <Text
+              style={[
+                styles.activeUserInfo,
+                { fontSize: scaleFont(12, fontSize) },
+              ]}
+            >
+              {activeUser.name} • {activeUser.position}
+            </Text>
+          )}
+
           <FlatList
             horizontal
+            style={styles.usersList}
+            contentContainerStyle={styles.usersRow}
             data={coworkers}
             keyExtractor={u => u.id}
-            contentContainerStyle={styles.usersRow}
             showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => setActiveChatUserId(item.id)}
-                style={[
-                  styles.userChip,
-                  item.id === activeUser?.id && styles.userChipActive,
-                ]}
-              >
-                <UserAvatar uri={item.avatar} label={item.name} size={40} />
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.userName,
-                    {
-                      fontSize: scaleFont(11, fontSize),
-                    },
-                  ]}
+            renderItem={({ item }) => {
+              const isActive = item.id === activeUser?.id;
+
+              return (
+                <TouchableOpacity
+                  onPress={() => setActiveChatUserId(item.id)}
+                  style={styles.userChipWrapper}
                 >
-                  {item.name.split(' ')[0]}
-                </Text>
-              </TouchableOpacity>
-            )}
+                  <View style={[styles.userChip, isActive && styles.userChipActive]}>
+                    <UserAvatar uri={item.avatar} label={item.name} size={44} />
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.userName,
+                      { fontSize: scaleFont(11, fontSize) },
+                    ]}
+                  >
+                    {item.name.split(' ')[0]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
           />
 
-          {/* Список повідомлень */}
           <View style={styles.messagesWrapper}>
             {activeUser ? (
               <FlatList
@@ -151,7 +163,6 @@ const MessagesScreen: React.FC = () => {
             )}
           </View>
 
-          {/* Sticky input */}
           <View style={styles.inputRow}>
             <TextInput
               style={[
@@ -196,29 +207,40 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontWeight: '700',
+  },
+  activeUserInfo: {
+    color: colors.textMuted,
+    marginTop: 2,
     marginBottom: 8,
   },
+
+  usersList: {
+    maxHeight: 80,          
+  },
   usersRow: {
-    paddingVertical: 8,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+  },
+  userChipWrapper: {
+    alignItems: 'center',
+    marginRight: 12,
   },
   userChip: {
-    alignItems: 'center',
-    marginRight: 8,
-    padding: 6,
     borderRadius: 999,
-    backgroundColor: 'transparent',
+    padding: 2,
   },
   userChipActive: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.accentSoft,
+    borderWidth: 2,
+    borderColor: colors.accent,
   },
   userName: {
     color: colors.text,
     marginTop: 4,
-    maxWidth: 64,
+    maxWidth: 70,
     textAlign: 'center',
   },
+  /* =============================================== */
+
   messagesWrapper: {
     flex: 1,
     marginTop: 4,
