@@ -1,0 +1,240 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "name": "Anna Nowak",
+      "email": "anna@novasoft.com",
+      "avatar": "https://i.pravatar.cc/150?u=anna",
+      "position": "Specjalista ds. marketingu",
+      "roles": [
+        "user"
+      ],
+      "groupIds": [
+        "g1"
+      ],
+      "companyIds": [
+        "c1"
+      ],
+      "password": "pass123"
+    },
+    {
+      "id": "u2",
+      "name": "Piotr Kowalski",
+      "email": "piotr@salespro.com",
+      "avatar": "https://i.pravatar.cc/150?u=piotr",
+      "position": "Handlowiec",
+      "roles": [
+        "user"
+      ],
+      "groupIds": [
+        "g2"
+      ],
+      "companyIds": [
+        "c2"
+      ],
+      "password": "pass123"
+    },
+    {
+      "id": "u3",
+      "name": "Katarzyna Wiśniewska",
+      "email": "katarzyna@novasoft.com",
+      "avatar": "https://i.pravatar.cc/150?u=katarzyna",
+      "position": "Junior Developer",
+      "roles": [
+        "user"
+      ],
+      "groupIds": [
+        "g3"
+      ],
+      "companyIds": [
+        "c1"
+      ],
+      "password": "pass123"
+    },
+    {
+      "id": "u4",
+      "name": "Marek Zieliński",
+      "email": "marek@bluemarketing.pl",
+      "avatar": "https://i.pravatar.cc/150?u=marek",
+      "position": "Manager Marketingu",
+      "roles": [
+        "manager"
+      ],
+      "groupIds": [
+        "g1"
+      ],
+      "companyIds": [
+        "c3"
+      ],
+      "password": "pass123"
+    },
+    {
+      "id": "u5",
+      "name": "Joanna Jankowska",
+      "email": "joanna@salespro.com",
+      "avatar": "https://i.pravatar.cc/150?u=joanna",
+      "position": "Kierownik Sprzedaży",
+      "roles": [
+        "manager"
+      ],
+      "groupIds": [
+        "g2"
+      ],
+      "companyIds": [
+        "c2"
+      ],
+      "password": "pass123"
+    },
+    {
+      "id": "u6",
+      "name": "Admin Systemu",
+      "email": "admin@usos.com",
+      "avatar": "https://i.pravatar.cc/150?u=admin",
+      "position": "Administrator",
+      "roles": [
+        "admin"
+      ],
+      "groupIds": [
+        "g1",
+        "g2",
+        "g3"
+      ],
+      "companyIds": [
+        "c1",
+        "c2",
+        "c3"
+      ],
+      "password": "admin123"
+    }
+  ],
+  "groups": [
+    {
+      "id": "g1",
+      "name": "Marketing",
+      "company": "NovaSoft",
+      "managerId": "u4"
+    },
+    {
+      "id": "g2",
+      "name": "Sprzedaż",
+      "company": "SalesPro",
+      "managerId": "u5"
+    },
+    {
+      "id": "g3",
+      "name": "IT",
+      "company": "NovaSoft",
+      "managerId": "u6"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "fromUserId": "u4",
+      "toUserId": "u1",
+      "text": "Cześć Ania, pamiętaj o prezentacji na jutro.",
+      "timestamp": "2025-01-01T09:00:00.000Z"
+    },
+    {
+      "id": "m2",
+      "fromUserId": "u1",
+      "toUserId": "u4",
+      "text": "Jasne, wszystko gotowe 🙂",
+      "timestamp": "2025-01-01T09:05:00.000Z"
+    },
+    {
+      "id": "m3",
+      "fromUserId": "u5",
+      "toUserId": "u2",
+      "text": "Piotr, jak idą rozmowy z klientem X?",
+      "timestamp": "2025-01-02T10:15:00.000Z"
+    },
+    {
+      "id": "m4",
+      "fromUserId": "u2",
+      "toUserId": "u5",
+      "text": "Jesteśmy na etapie finalizacji, dam znać po spotkaniu.",
+      "timestamp": "2025-01-02T10:20:00.000Z"
+    },
+    {
+      "id": "m5",
+      "fromUserId": "u3",
+      "toUserId": "u6",
+      "text": "Hej, potrzebuję dostępu do repo.",
+      "timestamp": "2025-01-03T08:30:00.000Z"
+    },
+    {
+      "id": "m6",
+      "fromUserId": "u6",
+      "toUserId": "u3",
+      "text": "Już nadałem uprawnienia, sprawdź proszę.",
+      "timestamp": "2025-01-03T08:35:00.000Z"
+    },
+    {
+      "id": "m7",
+      "fromUserId": "u1",
+      "toUserId": "u3",
+      "text": "Hej, możesz pomóc z kampanią online?",
+      "timestamp": "2025-01-04T11:00:00.000Z"
+    },
+    {
+      "id": "m8",
+      "fromUserId": "u3",
+      "toUserId": "u1",
+      "text": "Jasne, podeślij szczegóły na maila.",
+      "timestamp": "2025-01-04T11:10:00.000Z"
+    },
+    {
+      "id": "1763510758944",
+      "fromUserId": "u1",
+      "toUserId": "u4",
+      "text": "Hejka",
+      "timestamp": "2025-11-19T00:05:58.944Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "type": "task",
+      "title": "Przygotować kampanię social media",
+      "description": "Posty na LinkedIn i Facebook dla nowego produktu.",
+      "assignedToId": "u1",
+      "status": "in_progress",
+      "company": "NovaSoft"
+    },
+    {
+      "id": "t2",
+      "type": "task",
+      "title": "Follow-up po spotkaniu z klientem X",
+      "description": "Wysłać podsumowanie i propozycję oferty.",
+      "assignedToId": "u2",
+      "status": "todo",
+      "company": "SalesPro"
+    },
+    {
+      "id": "t3",
+      "type": "task",
+      "title": "Naprawa błędów w module logowania",
+      "description": "Zgłoszone przez QA, priorytet wysoki.",
+      "assignedToId": "u3",
+      "status": "in_progress",
+      "company": "NovaSoft"
+    },
+    {
+      "id": "t4",
+      "type": "shift",
+      "title": "Zmiana poranna",
+      "company": "NovaSoft",
+      "startTime": "2025-01-05T08:00:00.000Z",
+      "endTime": "2025-01-05T16:00:00.000Z"
+    },
+    {
+      "id": "t5",
+      "type": "shift",
+      "title": "Zmiana popołudniowa",
+      "company": "SalesPro",
+      "startTime": "2025-01-05T12:00:00.000Z",
+      "endTime": "2025-01-05T20:00:00.000Z"
+    }
+  ]
+}
