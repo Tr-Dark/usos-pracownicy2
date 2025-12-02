@@ -61,7 +61,8 @@
         "manager"
       ],
       "groupIds": [
-        "g1"
+        "g1",
+        "g2"
       ],
       "companyIds": [
         "c3"
@@ -173,6 +174,34 @@
       "timestamp": "2025-01-01T09:05:00.000Z"
     },
     {
+      "id": "m9",
+      "fromUserId": "u4",
+      "toUserId": "u1",
+      "text": "Super, możesz mi jeszcze podesłać slajdy do wglądu?",
+      "timestamp": "2025-01-01T09:10:00.000Z"
+    },
+    {
+      "id": "m10",
+      "fromUserId": "u1",
+      "toUserId": "u4",
+      "text": "Jasne, wyślę je za 5 minut na maila.",
+      "timestamp": "2025-01-01T09:12:00.000Z"
+    },
+    {
+      "id": "m11",
+      "fromUserId": "u4",
+      "toUserId": "u1",
+      "text": "Dzięki! I pamiętaj, żeby wspomnieć o kampanii w social media.",
+      "timestamp": "2025-01-01T09:18:00.000Z"
+    },
+    {
+      "id": "m12",
+      "fromUserId": "u1",
+      "toUserId": "u4",
+      "text": "Jest osobny slajd o socialach, będzie dobrze 😉",
+      "timestamp": "2025-01-01T09:22:00.000Z"
+    },
+    {
       "id": "m3",
       "fromUserId": "u5",
       "toUserId": "u2",
@@ -185,6 +214,27 @@
       "toUserId": "u5",
       "text": "Jesteśmy na etapie finalizacji, dam znać po spotkaniu.",
       "timestamp": "2025-01-02T10:20:00.000Z"
+    },
+    {
+      "id": "m13",
+      "fromUserId": "u5",
+      "toUserId": "u2",
+      "text": "Świetnie, czy potrzebujesz ode mnie jakichś materiałów cenowych?",
+      "timestamp": "2025-01-02T10:25:00.000Z"
+    },
+    {
+      "id": "m14",
+      "fromUserId": "u2",
+      "toUserId": "u5",
+      "text": "Podślij proszę najnowszy cennik i case study dla branży finansowej.",
+      "timestamp": "2025-01-02T10:28:00.000Z"
+    },
+    {
+      "id": "m15",
+      "fromUserId": "u5",
+      "toUserId": "u2",
+      "text": "Już wysyłam na maila. Daj znać po spotkaniu, jak poszło.",
+      "timestamp": "2025-01-02T10:35:00.000Z"
     },
     {
       "id": "m5",
@@ -201,6 +251,20 @@
       "timestamp": "2025-01-03T08:35:00.000Z"
     },
     {
+      "id": "m16",
+      "fromUserId": "u3",
+      "toUserId": "u6",
+      "text": "Działa, dzięki! Czy możemy dodać mnie też do projektu mobilnego?",
+      "timestamp": "2025-01-03T08:40:00.000Z"
+    },
+    {
+      "id": "m17",
+      "fromUserId": "u6",
+      "toUserId": "u3",
+      "text": "Tak, dodam Cię po daily, około 10:00.",
+      "timestamp": "2025-01-03T08:45:00.000Z"
+    },
+    {
       "id": "m7",
       "fromUserId": "u1",
       "toUserId": "u3",
@@ -215,11 +279,88 @@
       "timestamp": "2025-01-04T11:10:00.000Z"
     },
     {
+      "id": "m18",
+      "fromUserId": "u1",
+      "toUserId": "u3",
+      "text": "Wysłałam brief i propozycję grup docelowych.",
+      "timestamp": "2025-01-04T11:18:00.000Z"
+    },
+    {
+      "id": "m19",
+      "fromUserId": "u3",
+      "toUserId": "u1",
+      "text": "Widzę, dzięki. Odezwę się jak tylko przygotuję pierwszą wersję kreacji.",
+      "timestamp": "2025-01-04T11:30:00.000Z"
+    },
+    {
+      "id": "m20",
+      "fromUserId": "u6",
+      "toUserId": "u4",
+      "text": "Marek, pamiętaj o wysłaniu raportu kwartalnego do zarządu.",
+      "timestamp": "2025-01-05T07:55:00.000Z"
+    },
+    {
+      "id": "m21",
+      "fromUserId": "u4",
+      "toUserId": "u6",
+      "text": "Jasne, pracuję nad podsumowaniem kampanii. Wyślę do końca dnia.",
+      "timestamp": "2025-01-05T08:10:00.000Z"
+    },
+    {
+      "id": "m22",
+      "fromUserId": "1763511642370",
+      "toUserId": "u3",
+      "text": "Cześć, możesz mi wytłumaczyć jak działa nowy system logowania?",
+      "timestamp": "2025-01-06T09:00:00.000Z"
+    },
+    {
+      "id": "m23",
+      "fromUserId": "u3",
+      "toUserId": "1763511642370",
+      "text": "Hej! Jasne, mogę Ci pokazać na krótkim callu po lunchu.",
+      "timestamp": "2025-01-06T09:05:00.000Z"
+    },
+    {
+      "id": "m24",
+      "fromUserId": "1763511642370",
+      "toUserId": "u3",
+      "text": "Super, pasuje mi 14:00.",
+      "timestamp": "2025-01-06T09:08:00.000Z"
+    },
+    {
+      "id": "m25",
+      "fromUserId": "u6",
+      "toUserId": "1763511642370",
+      "text": "Dodałem Cię do projektu IT, masz już dostęp do Jiry.",
+      "timestamp": "2025-01-06T10:15:00.000Z"
+    },
+    {
+      "id": "m26",
+      "fromUserId": "1763511642370",
+      "toUserId": "u6",
+      "text": "Widzę, dzięki! Spróbuję dziś wrzucić pierwszy ticket.",
+      "timestamp": "2025-01-06T10:20:00.000Z"
+    },
+    {
       "id": "1763510758944",
       "fromUserId": "u1",
       "toUserId": "u4",
       "text": "Hejka",
       "timestamp": "2025-11-19T00:05:58.944Z"
+    },
+    {
+      "id": "m27",
+      "fromUserId": "u4",
+      "toUserId": "u1",
+      "text": "Hej, właśnie wróciłem ze spotkania, wszystko poszło dobrze.",
+      "timestamp": "2025-11-19T00:10:00.000Z"
+    },
+    {
+      "id": "m28",
+      "fromUserId": "u1",
+      "toUserId": "u4",
+      "text": "Super wiadomość! To da znać kiedy mamy startować z kampanią.",
+      "timestamp": "2025-11-19T00:12:30.000Z"
     },
     {
       "id": "1763511748332",
@@ -229,6 +370,13 @@
       "timestamp": "2025-11-19T00:22:28.332Z"
     },
     {
+      "id": "m29",
+      "fromUserId": "u4",
+      "toUserId": "u6",
+      "text": "Tak, mieliśmy drobne opóźnienie, ale prezentacja się udała.",
+      "timestamp": "2025-11-19T00:25:10.000Z"
+    },
+    {
       "id": "1763513129132",
       "fromUserId": "u2",
       "toUserId": "u5",
@@ -236,11 +384,88 @@
       "timestamp": "2025-11-19T00:45:29.132Z"
     },
     {
+      "id": "m30",
+      "fromUserId": "u5",
+      "toUserId": "u2",
+      "text": "Cześć, jak tam pipeline na ten tydzień?",
+      "timestamp": "2025-11-19T00:47:00.000Z"
+    },
+    {
+      "id": "m31",
+      "fromUserId": "u2",
+      "toUserId": "u5",
+      "text": "Mamy trzy gorące leady, jutro wysyłam oferty.",
+      "timestamp": "2025-11-19T00:49:30.000Z"
+    },
+    {
       "id": "1763513372021",
       "fromUserId": "u2",
       "toUserId": "u6",
       "text": "Mam problem!",
       "timestamp": "2025-11-19T00:49:32.022Z"
+    },
+    {
+      "id": "m32",
+      "fromUserId": "u6",
+      "toUserId": "u2",
+      "text": "Co się dzieje?",
+      "timestamp": "2025-11-19T00:50:10.000Z"
+    },
+    {
+      "id": "m33",
+      "fromUserId": "u2",
+      "toUserId": "u6",
+      "text": "Nie mogę wysłać oferty z CRM, wyskakuje błąd serwera.",
+      "timestamp": "2025-11-19T00:51:00.000Z"
+    },
+    {
+      "id": "m34",
+      "fromUserId": "u6",
+      "toUserId": "u2",
+      "text": "Przekazuję to do IT, dam znać jak tylko naprawią.",
+      "timestamp": "2025-11-19T00:52:10.000Z"
+    },
+    {
+      "id": "1763514297847",
+      "fromUserId": "u5",
+      "toUserId": "u6",
+      "text": "Jak dodac urzytkownika?",
+      "timestamp": "2025-11-19T01:04:57.847Z"
+    },
+    {
+      "id": "m35",
+      "fromUserId": "u6",
+      "toUserId": "u5",
+      "text": "W panelu admina wpisz email i wybierz odpowiednią grupę.",
+      "timestamp": "2025-11-19T01:06:00.000Z"
+    },
+    {
+      "id": "m36",
+      "fromUserId": "u5",
+      "toUserId": "u6",
+      "text": "Ok, już widzę. Dzięki!",
+      "timestamp": "2025-11-19T01:07:30.000Z"
+    },
+    {
+      "id": "1763535640546",
+      "fromUserId": "u2",
+      "toUserId": "u5",
+      "text": "Czesc!",
+      "timestamp": "2025-11-19T07:00:40.546Z"
+    },
+    {
+      "id": "1763536970774",
+      "fromUserId": "u1",
+      "toUserId": "u6",
+      "text": "Hej",
+      "timestamp": "2025-11-19T07:22:50.774Z"
+    },
+    {
+      "id": "1763538015839",
+      "fromUserId": "u1",
+      "toUserId": "u6",
+      "text": "Cos",
+      "timestamp": "2025-11-19T07:40:15.839Z"
     }
   ],
   "tasks": [
