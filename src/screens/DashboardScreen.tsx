@@ -1,26 +1,399 @@
 // src/screens/DashboardScreen.tsx
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useMemo } from 'react';
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Screen } from '../components/Screen';
 import { useAuth } from '../context/AuthContext';
+import { useTasks } from '../context/TasksContext';
+import { useMessages } from '../context/MessagesContext';
+import { useGroups } from '../context/GroupsContext';
 import { usePrefs } from '../context/PrefsContext';
-import { scaleFont } from '../utils/scaleFont';
 import { colors } from '../theme/colors';
+import { scaleFont } from '../utils/scaleFont';
+import { Task } from '../models/Task';
+import { Message } from '../models/Message';
+import { User } from '../models/User';
+import { useNavigation } from '@react-navigation/native';
 
 const DashboardScreen: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAdmin, isManager } = useAuth();
+  const { tasks } = useTasks();
+  const { messages } = useMessages();
+  const { users, visibleGroups } = useGroups();
   const { fontSize } = usePrefs();
+  const navigation = useNavigation<any>();
+
+  if (!user) return null;
+
+  const userRolesLabel = useMemo(
+    () =>
+      (user.roles || [])
+        .map(r =>
+          r === 'admin' ? 'Admin' : r === 'manager' ? 'Manager' : 'User'
+        )
+        .join(', '),
+    [user.roles]
+  );
+
+  // Невиконані задачі користувача
+  const myOpenTasks: Task[] = useMemo(
+    () =>
+      tasks
+        .filter(
+          t =>
+            t.type === 'task' &&
+            t.assignedToId === user.id &&
+            t.status !== 'done'
+        )
+        .slice(0, 5),
+    [tasks, user.id]
+  );
+
+  // Графік (зміни) користувача
+  const myShifts: Task[] = useMemo(
+    () =>
+      tasks
+        .filter(
+          t => t.type === 'shift' && t.assignedToId === user.id
+        )
+        .slice(0, 3),
+    [tasks, user.id]
+  );
+
+  // Останні повідомлення (5 штук)
+  const myMessages: (Message & { other?: User })[] = useMemo(() => {
+    const myMsgs = messages
+      .filter(m => m.fromUserId === user.id || m.toUserId === user.id)
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() -
+          new Date(a.timestamp).getTime()
+      )
+      .slice(0, 5);
+
+    return myMsgs.map(m => {
+      const otherId = m.fromUserId === user.id ? m.toUserId : m.fromUserId;
+      const other = users.find(u => u.id === otherId);
+      return { ...m, other };
+    });
+  }, [messages, user.id, users]);
+
+  const goToTasks = () => navigation.navigate('Tasks');
+  const goToMessages = () => navigation.navigate('Messages');
+  const goToAttendance = () => navigation.navigate('Attendance');
 
   return (
     <Screen>
       <View style={styles.container}>
-        <Text style={[styles.title, { fontSize: scaleFont(22, fontSize) }]}>
-          Dzień dobry, {user?.name ?? 'Pracowniku'} 👋
-        </Text>
-        <Text style={[styles.subtitle, { fontSize: scaleFont(14, fontSize) }]}>
-          Szybki podgląd Twoich grup, zadań i wiadomości.
-        </Text>
-        {/* Тут можна додати картки підсумків, np. ilość zadań */}
+        {/* Привітання + ролі */}
+        <View style={styles.headerCard}>
+          <Text
+            style={[
+              styles.greeting,
+              { fontSize: scaleFont(20, fontSize) },
+            ]}
+          >
+            Cześć, {user.name.split(' ')[0]} 👋
+          </Text>
+          <Text
+            style={[
+              styles.subGreeting,
+              { fontSize: scaleFont(12, fontSize) },
+            ]}
+          >
+            Stanowisko: {user.position || '—'}
+          </Text>
+          <Text
+            style={[
+              styles.subGreeting,
+              { fontSize: scaleFont(12, fontSize) },
+            ]}
+          >
+            Rola: {userRolesLabel || 'user'}
+          </Text>
+          {visibleGroups.length > 0 && (
+            <Text
+              style={[
+                styles.subGreeting,
+                { fontSize: scaleFont(12, fontSize) },
+              ]}
+            >
+              Grupy: {visibleGroups.map(g => g.name).join(', ')}
+            </Text>
+          )}
+        </View>
+
+        {/* Швидкі дії */}
+        <View style={styles.quickRow}>
+          <TouchableOpacity
+            style={styles.quickButton}
+            onPress={goToTasks}
+          >
+            <Text
+              style={[
+                styles.quickButtonText,
+                { fontSize: scaleFont(13, fontSize) },
+              ]}
+            >
+              Moje zadania
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickButton}
+            onPress={goToMessages}
+          >
+            <Text
+              style={[
+                styles.quickButtonText,
+                { fontSize: scaleFont(13, fontSize) },
+              ]}
+            >
+              Wiadomości
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickButton}
+            onPress={goToAttendance}
+          >
+            <Text
+              style={[
+                styles.quickButtonText,
+                { fontSize: scaleFont(13, fontSize) },
+              ]}
+            >
+              Obecność
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Блок: задачі */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text
+              style={[
+                styles.cardTitle,
+                { fontSize: scaleFont(15, fontSize) },
+              ]}
+            >
+              Otwarte zadania
+            </Text>
+            <TouchableOpacity onPress={goToTasks}>
+              <Text
+                style={[
+                  styles.cardLink,
+                  { fontSize: scaleFont(11, fontSize) },
+                ]}
+              >
+                Zobacz wszystkie
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {myOpenTasks.length === 0 ? (
+            <Text
+              style={[
+                styles.emptyText,
+                { fontSize: scaleFont(12, fontSize) },
+              ]}
+            >
+              Brak otwartych zadań.
+            </Text>
+          ) : (
+            <FlatList
+              data={myOpenTasks}
+              keyExtractor={t => t.id}
+              scrollEnabled={false}
+              renderItem={({ item }) => (
+                <View style={styles.taskRow}>
+                  <View>
+                    <Text
+                      style={[
+                        styles.taskTitle,
+                        { fontSize: scaleFont(13, fontSize) },
+                      ]}
+                    >
+                      {item.title}
+                    </Text>
+                    {item.description && (
+                      <Text
+                        style={[
+                          styles.taskDesc,
+                          { fontSize: scaleFont(11, fontSize) },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {item.description}
+                      </Text>
+                    )}
+                  </View>
+                  {item.status && (
+                    <Text
+                      style={[
+                        styles.taskStatus,
+                        {
+                          fontSize: scaleFont(10, fontSize),
+                        },
+                      ]}
+                    >
+                      {item.status === 'todo'
+                        ? 'TODO'
+                        : item.status === 'in_progress'
+                        ? 'W TOKU'
+                        : 'ZROBIONE'}
+                    </Text>
+                  )}
+                </View>
+              )}
+            />
+          )}
+        </View>
+
+        {/* Блок: графік */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text
+              style={[
+                styles.cardTitle,
+                { fontSize: scaleFont(15, fontSize) },
+              ]}
+            >
+              Twój grafik
+            </Text>
+            <TouchableOpacity onPress={goToTasks}>
+              <Text
+                style={[
+                  styles.cardLink,
+                  { fontSize: scaleFont(11, fontSize) },
+                ]}
+              >
+                Grafik wszystkich
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {myShifts.length === 0 ? (
+            <Text
+              style={[
+                styles.emptyText,
+                { fontSize: scaleFont(12, fontSize) },
+              ]}
+            >
+              Brak przypisanych zmian.
+            </Text>
+          ) : (
+            <FlatList
+              data={myShifts}
+              keyExtractor={s => s.id}
+              scrollEnabled={false}
+              renderItem={({ item }) => {
+                const start = item.startTime
+                  ? new Date(item.startTime).toLocaleString()
+                  : '';
+                const end = item.endTime
+                  ? new Date(item.endTime).toLocaleTimeString()
+                  : '';
+                return (
+                  <View style={styles.shiftRow}>
+                    <Text
+                      style={[
+                        styles.shiftTitle,
+                        { fontSize: scaleFont(13, fontSize) },
+                      ]}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.shiftTime,
+                        { fontSize: scaleFont(11, fontSize) },
+                      ]}
+                    >
+                      {start} {end ? `– ${end}` : ''}
+                    </Text>
+                  </View>
+                );
+              }}
+            />
+          )}
+        </View>
+
+        {/* Блок: останні повідомлення */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text
+              style={[
+                styles.cardTitle,
+                { fontSize: scaleFont(15, fontSize) },
+              ]}
+            >
+              Ostatnie wiadomości
+            </Text>
+            <TouchableOpacity onPress={goToMessages}>
+              <Text
+                style={[
+                  styles.cardLink,
+                  { fontSize: scaleFont(11, fontSize) },
+                ]}
+              >
+                Otwórz czat
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {myMessages.length === 0 ? (
+            <Text
+              style={[
+                styles.emptyText,
+                { fontSize: scaleFont(12, fontSize) },
+              ]}
+            >
+              Brak wiadomości.
+            </Text>
+          ) : (
+            <FlatList
+              data={myMessages}
+              keyExtractor={m => m.id}
+              scrollEnabled={false}
+              renderItem={({ item }) => (
+                <View style={styles.msgRow}>
+                  <Text
+                    style={[
+                      styles.msgWho,
+                      { fontSize: scaleFont(12, fontSize) },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.other
+                      ? item.other.name
+                      : 'Nieznany użytkownik'}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.msgText,
+                      { fontSize: scaleFont(11, fontSize) },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.text}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.msgTime,
+                      { fontSize: scaleFont(10, fontSize) },
+                    ]}
+                  >
+                    {new Date(item.timestamp).toLocaleTimeString()}
+                  </Text>
+                </View>
+              )}
+            />
+          )}
+        </View>
       </View>
     </Screen>
   );
@@ -31,14 +404,108 @@ export default DashboardScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
+    paddingHorizontal: 12,
+    paddingTop: 12,
   },
-  title: {
+  headerCard: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    marginBottom: 10,
+  },
+  greeting: {
     color: colors.text,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  subtitle: {
+  subGreeting: {
+    color: colors.textMuted,
+  },
+  quickRow: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  quickButton: {
+    flex: 1,
+    backgroundColor: colors.accent,
+    borderRadius: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
+    marginRight: 6,
+  },
+  quickButtonText: {
+    color: '#0b1120',
+    fontWeight: '600',
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 10,
+    marginBottom: 10,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  cardTitle: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  cardLink: {
+    color: colors.accent,
+  },
+  emptyText: {
+    color: colors.textMuted,
+  },
+  taskRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  taskTitle: {
+    color: colors.text,
+    fontWeight: '500',
+  },
+  taskDesc: {
+    color: colors.textMuted,
+  },
+  taskStatus: {
+    color: '#0b1120',
+    backgroundColor: colors.accent,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    overflow: 'hidden',
+    fontWeight: '600',
+  },
+  shiftRow: {
+    marginBottom: 4,
+  },
+  shiftTitle: {
+    color: colors.text,
+    fontWeight: '500',
+  },
+  shiftTime: {
+    color: colors.textMuted,
+  },
+  msgRow: {
+    marginBottom: 4,
+  },
+  msgWho: {
+    color: colors.text,
+    fontWeight: '500',
+  },
+  msgText: {
+    color: colors.textMuted,
+  },
+  msgTime: {
     color: colors.textMuted,
   },
 });

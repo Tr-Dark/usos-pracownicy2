@@ -41,7 +41,8 @@
       "avatar": "https://i.pravatar.cc/150?u=katarzyna",
       "position": "Junior Developer",
       "roles": [
-        "user"
+        "user",
+        "manager"
       ],
       "groupIds": [
         "g3"
@@ -156,6 +157,12 @@
       "name": "IT",
       "company": "NovaSoft",
       "managerId": "u6"
+    },
+    {
+      "id": "1764709786175",
+      "name": "Test 2",
+      "company": "NovaSoft 2",
+      "managerId": "u3"
     }
   ],
   "messages": [
@@ -493,7 +500,7 @@
       "title": "Naprawa błędów w module logowania",
       "description": "Zgłoszone przez QA, priorytet wysoki.",
       "assignedToId": "u3",
-      "status": "in_progress",
+      "status": "done",
       "company": "NovaSoft"
     },
     {
@@ -511,6 +518,17 @@
       "company": "SalesPro",
       "startTime": "2025-01-05T12:00:00.000Z",
       "endTime": "2025-01-05T20:00:00.000Z"
+    },
+    {
+      "id": "1764711057007",
+      "type": "task",
+      "title": "Zadanie od Admina",
+      "description": "Test",
+      "assignedToId": "u1",
+      "groupId": "g1",
+      "company": "c1",
+      "createdById": "u6",
+      "status": "todo"
     }
   ]
 }

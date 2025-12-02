@@ -16,6 +16,9 @@ interface AuthContextValue {
     position?: string;
     password?: string;
   }) => Promise<void>;
+  isAdmin: boolean;
+  isManager: boolean;
+  isUser: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -115,9 +118,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const isAdmin = !!user?.roles.includes('admin');
+  const isManager = !!user?.roles.includes('manager');
+  const isUser = !!user?.roles.includes('user');
+
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, register, logout, updateProfile }}
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        register,
+        logout,
+        updateProfile,
+        isAdmin,
+        isManager,
+        isUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

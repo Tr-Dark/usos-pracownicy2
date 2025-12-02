@@ -1,15 +1,15 @@
 // src/models/User.ts
-export type UserRole = 'admin' | 'manager' | 'user';
+
+export type Role = 'admin' | 'manager' | 'user';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   avatar: string;
-  position: string;           // Junior, Specjalista, Manager, itd.
-  roles: UserRole[];
+  position: string;
+  roles: Role[];
   groupIds: string[];
   companyIds: string[];
-
-  password?: string;
+  password?: string; // json-server: пароль теж лежить в users
 }

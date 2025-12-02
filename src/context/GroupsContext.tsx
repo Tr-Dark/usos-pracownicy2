@@ -1,105 +1,156 @@
 // src/context/GroupsContext.tsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  ReactNode,
+} from 'react';
 import { api } from '../api/api';
-import { User } from '../models/User';
 import { Group } from '../models/Group';
+import { Role, User } from '../models/User';
 import { useAuth } from './AuthContext';
 
 interface GroupsContextValue {
   users: User[];
   groups: Group[];
+  visibleGroups: Group[];
   loading: boolean;
   refresh: () => Promise<void>;
   addUserToGroup: (email: string, groupId: string) => Promise<void>;
-  visibleGroups: Group[];
+  updateUserRoles: (userId: string, roles: Role[]) => Promise<void>;
+  createGroup: (input: {
+    name: string;
+    company: string;
+    managerId: string;
+  }) => Promise<void>;
 }
 
 const GroupsContext = createContext<GroupsContextValue | undefined>(undefined);
 
-export const GroupsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const GroupsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const refresh = async () => {
-    setLoading(true);
+  const load = async () => {
     try {
+      setLoading(true);
       const [usersRes, groupsRes] = await Promise.all([
         api.get<User[]>('/users'),
         api.get<Group[]>('/groups'),
       ]);
       setUsers(usersRes.data);
       setGroups(groupsRes.data);
+    } catch (e) {
+      console.warn('Failed to load users/groups', e);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    refresh();
+    load();
   }, []);
 
-const addUserToGroup = async (email: string, groupId: string) => {
-  const emailNorm = email.toLowerCase().trim();
-
-  const userToAdd = users.find(
-    u => u.email.toLowerCase() === emailNorm
-  );
-
-  if (!userToAdd) {
-    throw new Error('Użytkownik nie znaleziony (sprawdź email)');
-  }
-
-  const group = groups.find(g => g.id === groupId);
-  if (!group) {
-    throw new Error('Grupa nie istnieje');
-  }
-
-  const nextGroupIds = userToAdd.groupIds.includes(groupId)
-    ? userToAdd.groupIds
-    : [...userToAdd.groupIds, groupId];
-
-  const nextCompanyIds = group.company
-    ? Array.from(
-        new Set([...(userToAdd.companyIds || []), group.company])
-      )
-    : userToAdd.companyIds || [];
-
-  const updated = {
-    ...userToAdd,
-    groupIds: nextGroupIds,
-    companyIds: nextCompanyIds,
+  const refresh = async () => {
+    await load();
   };
 
-  await api.patch(`/users/${userToAdd.id}`, {
-    groupIds: nextGroupIds,
-    companyIds: nextCompanyIds,
-  });
-
-  setUsers(prev => prev.map(u => (u.id === userToAdd.id ? updated : u)));
-};
-
-  let visibleGroups: Group[] = [];
-  if (user) {
+  const visibleGroups: Group[] = useMemo(() => {
+    if (!user) return [];
     if (user.roles.includes('admin')) {
-      visibleGroups = groups;
-    } else if (user.roles.includes('manager')) {
-      visibleGroups = groups.filter(g => g.managerId === user.id || user.groupIds.includes(g.id));
-    } else {
-      visibleGroups = groups.filter(g => user.groupIds.includes(g.id));
+      return groups;
     }
-  }
+
+    const userGroupIds = user.groupIds ?? [];
+
+    // менеджер бачить групи, де він manager або учасник
+    if (user.roles.includes('manager')) {
+      return groups.filter(
+        g => g.managerId === user.id || userGroupIds.includes(g.id)
+      );
+    }
+
+    // звичайний user – тільки свої групи
+    return groups.filter(g => userGroupIds.includes(g.id));
+  }, [groups, user]);
+
+  const addUserToGroup = async (email: string, groupId: string) => {
+    const group = groups.find(g => g.id === groupId);
+    if (!group) {
+      throw new Error('Grupa nie istnieje');
+    }
+
+    // спочатку шукаємо локально
+    let target = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    // якщо нема – пробуємо дотягнути з API
+    if (!target) {
+      const { data } = await api.get<User[]>('/users', {
+        params: { email },
+      });
+      target = data[0];
+    }
+
+    if (!target) {
+      throw new Error('Użytkownik o takim emailu nie został znaleziony');
+    }
+
+    if (target.groupIds?.includes(groupId)) {
+      throw new Error('Użytkownik już jest w tej grupie');
+    }
+
+    const updated: User = {
+      ...target,
+      groupIds: [...(target.groupIds ?? []), groupId],
+      companyIds: target.companyIds?.includes(group.company)
+        ? target.companyIds
+        : [...(target.companyIds ?? []), group.company],
+    };
+
+    const { data } = await api.patch<User>(`/users/${target.id}`, {
+      groupIds: updated.groupIds,
+      companyIds: updated.companyIds,
+    });
+
+    setUsers(prev => prev.map(u => (u.id === data.id ? data : u)));
+  };
+
+  const updateUserRoles = async (userId: string, roles: Role[]) => {
+    const { data } = await api.patch<User>(`/users/${userId}`, { roles });
+    setUsers(prev => prev.map(u => (u.id === data.id ? data : u)));
+  };
+
+  const createGroup = async (input: {
+    name: string;
+    company: string;
+    managerId: string;
+  }) => {
+    const newGroup: Group = {
+      id: Date.now().toString(),
+      name: input.name,
+      company: input.company,
+      managerId: input.managerId,
+    };
+
+    const { data } = await api.post<Group>('/groups', newGroup);
+    setGroups(prev => [...prev, data]);
+  };
 
   return (
     <GroupsContext.Provider
       value={{
         users,
         groups,
+        visibleGroups,
         loading,
         refresh,
         addUserToGroup,
-        visibleGroups,
+        updateUserRoles,
+        createGroup,
       }}
     >
       {children}

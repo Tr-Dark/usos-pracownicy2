@@ -10,12 +10,22 @@ import {
 import { Screen } from '../components/Screen';
 import { usePrefs } from '../context/PrefsContext';
 import { useAuth } from '../context/AuthContext';
-import { scaleFont } from '../utils/scaleFont';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MainStackParamList } from '../navigation/RootNavigator';
 import { colors } from '../theme/colors';
+import { scaleFont } from '../utils/scaleFont';
+
+type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 const SettingsScreen: React.FC = () => {
-  const { darkMode, setDarkMode, fontSize, setFontSize } = usePrefs();
-  const { logout } = useAuth();
+  const { darkMode, fontSize, setDarkMode, setFontSize } = usePrefs() as any;
+  const { logout, isAdmin } = useAuth();
+  const navigation = useNavigation<Nav>();
+
+  const handleFontSizeChange = (size: 'small' | 'normal' | 'large') => {
+    setFontSize(size);
+  };
 
   return (
     <Screen>
@@ -24,84 +34,142 @@ const SettingsScreen: React.FC = () => {
           Ustawienia
         </Text>
 
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <View>
+        {/* Nawigacja: profil / panel admina */}
+        <View style={styles.section}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { fontSize: scaleFont(15, fontSize) },
+            ]}
+          >
+            Konto
+          </Text>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <Text
+              style={[
+                styles.buttonText,
+                { fontSize: scaleFont(14, fontSize) },
+              ]}
+            >
+              Mój profil
+            </Text>
+          </TouchableOpacity>
+
+          {isAdmin && (
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => navigation.navigate('AdminPanel')}
+            >
               <Text
                 style={[
-                  styles.label,
+                  styles.buttonText,
                   { fontSize: scaleFont(14, fontSize) },
                 ]}
               >
-                Ciemny motyw
+                Panel administratora
               </Text>
-              <Text
-                style={[
-                  styles.description,
-                  { fontSize: scaleFont(11, fontSize) },
-                ]}
-              >
-                Domyślnie włączony
-              </Text>
-            </View>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Wygląd */}
+        <View style={styles.section}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { fontSize: scaleFont(15, fontSize) },
+            ]}
+          >
+            Wygląd
+          </Text>
+
+          <View style={styles.rowBetween}>
+            <Text
+              style={[
+                styles.label,
+                { fontSize: scaleFont(13, fontSize) },
+              ]}
+            >
+              Tryb ciemny
+            </Text>
             <Switch
               value={darkMode}
               onValueChange={setDarkMode}
+              thumbColor={darkMode ? colors.accent : '#e5e7eb'}
+              trackColor={{ true: '#1e293b', false: '#4b5563' }}
             />
           </View>
-
-          <View style={styles.separator} />
 
           <Text
             style={[
               styles.label,
-              { fontSize: scaleFont(14, fontSize) },
+              { fontSize: scaleFont(13, fontSize), marginTop: 12 },
             ]}
           >
             Rozmiar czcionki
           </Text>
           <View style={styles.fontRow}>
-            {(['small', 'normal', 'large'] as const).map(size => (
-              <TouchableOpacity
-                key={size}
-                style={[
-                  styles.fontButton,
-                  fontSize === size && styles.fontButtonActive,
-                ]}
-                onPress={() => setFontSize(size)}
-              >
-                <Text
+            {(['small', 'normal', 'large'] as const).map(size => {
+              const active = fontSize === size;
+              return (
+                <TouchableOpacity
+                  key={size}
                   style={[
-                    styles.fontButtonText,
-                    {
-                      fontSize: scaleFont(
-                        size === 'small' ? 11 : size === 'normal' ? 13 : 15,
-                        fontSize
-                      ),
-                    },
+                    styles.fontChip,
+                    active && styles.fontChipActive,
                   ]}
+                  onPress={() => handleFontSizeChange(size)}
                 >
-                  {size === 'small'
-                    ? 'A-'
-                    : size === 'normal'
-                    ? 'A'
-                    : 'A+'}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.fontChipText,
+                      {
+                        fontSize: scaleFont(12, fontSize),
+                        color: active ? '#0b1120' : colors.text,
+                      },
+                    ]}
+                  >
+                    {size === 'small'
+                      ? 'Mała'
+                      : size === 'normal'
+                      ? 'Normalna'
+                      : 'Duża'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+        {/* Logout */}
+        <View style={styles.section}>
           <Text
             style={[
-              styles.logoutText,
-              { fontSize: scaleFont(14, fontSize) },
+              styles.sectionTitle,
+              { fontSize: scaleFont(15, fontSize) },
             ]}
           >
-            Logout
+            Sesja
           </Text>
-        </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.logoutButton]}
+            onPress={logout}
+          >
+            <Text
+              style={[
+                styles.logoutText,
+                { fontSize: scaleFont(14, fontSize) },
+              ]}
+            >
+              Wyloguj się
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </Screen>
   );
@@ -112,65 +180,77 @@ export default SettingsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
+    paddingHorizontal: 12,
+    paddingTop: 12,
   },
   title: {
     color: colors.text,
     fontWeight: '700',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  card: {
+  section: {
     backgroundColor: colors.card,
     borderRadius: 20,
-    padding: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    padding: 12,
+    marginBottom: 12,
   },
-  row: {
+  sectionTitle: {
+    color: colors.text,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  rowBetween: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   label: {
     color: colors.text,
-    fontWeight: '600',
-  },
-  description: {
-    color: colors.textMuted,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 12,
   },
   fontRow: {
     flexDirection: 'row',
-    marginTop: 8,
+    marginTop: 6,
   },
-  fontButton: {
-    borderRadius: 20,
+  fontChip: {
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     marginRight: 8,
   },
-  fontButtonActive: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accentSoft,
+  fontChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
-  fontButtonText: {
+  fontChipText: {
     color: colors.text,
+    fontWeight: '500',
+  },
+  button: {
+    backgroundColor: '#020617',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginTop: 6,
+  },
+  buttonText: {
+    color: colors.text,
+    fontWeight: '500',
   },
   logoutButton: {
-    marginTop: 16,
-    backgroundColor: colors.danger,
-    borderRadius: 20,
-    paddingVertical: 12,
+    backgroundColor: '#b91c1c',
+    borderRadius: 16,
+    paddingVertical: 10,
     alignItems: 'center',
+    marginTop: 4,
   },
   logoutText: {
-    color: '#0b1120',
+    color: '#f9fafb',
     fontWeight: '600',
   },
 });

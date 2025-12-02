@@ -30,21 +30,48 @@ const MessagesScreen: React.FC = () => {
   const { fontSize } = usePrefs();
   const [text, setText] = useState('');
 
-  // всі співробітники з моїх груп
-  const coworkers: User[] = useMemo(() => {
-    if (!me) return [];
+  if (!me) return null;
+
+  // == Люди з моїх груп ==
+  const coworkersFromGroups: User[] = useMemo(() => {
     const myGroupIds = visibleGroups.map(g => g.id);
     const setIds = new Set<string>();
 
     return users.filter(u => {
       if (u.id === me.id) return false;
-      const common = u.groupIds.some(gId => myGroupIds.includes(gId));
+      const common = u.groupIds?.some(gId => myGroupIds.includes(gId));
       if (!common) return false;
       if (setIds.has(u.id)) return false;
       setIds.add(u.id);
       return true;
     });
-  }, [users, visibleGroups, me]);
+  }, [users, visibleGroups, me.id]);
+
+  // == Адміни (завжди доступні як "support") ==
+  const adminUsers: User[] = useMemo(
+    () =>
+      users.filter(
+        u => u.id !== me.id && u.roles?.includes('admin')
+      ),
+    [users, me.id]
+  );
+
+  // == Обʼєднуємо: групи + адміни ==
+  const coworkers: User[] = useMemo(() => {
+    const map = new Map<string, User>();
+
+    // спочатку люди з моїх груп
+    for (const u of coworkersFromGroups) {
+      map.set(u.id, u);
+    }
+
+    // потім адміни (переписують/добавляються)
+    for (const u of adminUsers) {
+      map.set(u.id, u);
+    }
+
+    return Array.from(map.values());
+  }, [coworkersFromGroups, adminUsers]);
 
   const activeUser: User | undefined = useMemo(
     () => coworkers.find(c => c.id === activeChatUserId) ?? coworkers[0],
@@ -78,7 +105,7 @@ const MessagesScreen: React.FC = () => {
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
-    const isOwn = item.fromUserId === me?.id;
+    const isOwn = item.fromUserId === me.id;
     const user =
       (!isOwn && activeUser) ||
       (isOwn && me) ||
@@ -109,6 +136,7 @@ const MessagesScreen: React.FC = () => {
             </Text>
           )}
 
+          {/* Горизонтальний список користувачів */}
           <FlatList
             horizontal
             style={styles.usersList}
@@ -141,6 +169,7 @@ const MessagesScreen: React.FC = () => {
             }}
           />
 
+          {/* Список повідомлень */}
           <View style={styles.messagesWrapper}>
             {activeUser ? (
               <FlatList
@@ -157,12 +186,13 @@ const MessagesScreen: React.FC = () => {
                     { fontSize: scaleFont(14, fontSize) },
                   ]}
                 >
-                  Brak współpracowników w Twoich grupach.
+                  Brak współpracowników do rozmowy.
                 </Text>
               </View>
             )}
           </View>
 
+          {/* Sticky input */}
           <View style={styles.inputRow}>
             <TextInput
               style={[
@@ -215,7 +245,7 @@ const styles = StyleSheet.create({
   },
 
   usersList: {
-    maxHeight: 80,          
+    maxHeight: 80,
   },
   usersRow: {
     paddingHorizontal: 4,
@@ -239,7 +269,6 @@ const styles = StyleSheet.create({
     maxWidth: 70,
     textAlign: 'center',
   },
-  /* =============================================== */
 
   messagesWrapper: {
     flex: 1,
