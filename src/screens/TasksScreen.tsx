@@ -11,235 +11,417 @@ import {
 } from 'react-native';
 import { Screen } from '../components/Screen';
 import { useAuth } from '../context/AuthContext';
-import { useGroups } from '../context/GroupsContext';
 import { useTasks } from '../context/TasksContext';
 import { usePrefs } from '../context/PrefsContext';
+import { useGroups } from '../context/GroupsContext';
 import { colors } from '../theme/colors';
 import { scaleFont } from '../utils/scaleFont';
-import { Task, TaskStatus } from '../models/Task';
+import { Task, TaskPriority, TaskStatus } from '../models/Task';
 import { User } from '../models/User';
 
-type Tab = 'tasks' | 'schedule';
-type TasksViewMode = 'me' | 'team';
+type MainTab = 'tasks' | 'schedule';
+type ScheduleScope = 'mine' | 'all';
+
+const priorityWeight: Record<TaskPriority | 'none', number> = {
+  high: 3,
+  medium: 2,
+  low: 1,
+  none: 0,
+};
 
 const TasksScreen: React.FC = () => {
   const { user, isAdmin, isManager } = useAuth();
-  const { tasks, loading, createTask, updateTaskStatus } = useTasks();
-  const { users, groups, visibleGroups } = useGroups();
+  const { tasks, updateTask, createTask } = useTasks();
   const { fontSize } = usePrefs();
+  const { users } = useGroups();
 
-  const [activeTab, setActiveTab] = useState<Tab>('tasks');
-  const [tasksViewMode, setTasksViewMode] = useState<TasksViewMode>('me');
-  const [showAllSchedule, setShowAllSchedule] = useState<boolean>(false);
+  const [mainTab, setMainTab] = useState<MainTab>('tasks');
+  const [scheduleScope, setScheduleScope] =
+    useState<ScheduleScope>('mine');
+  const [search, setSearch] = useState('');
 
-  const [newTitle, setNewTitle] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
-    null
-  );
-  const [creating, setCreating] = useState<boolean>(false);
+  // --- стани для створення ЗАДАЧ ---
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [newTaskPriority, setNewTaskPriority] =
+    useState<TaskPriority>('medium');
+  const [newTaskAssigneeId, setNewTaskAssigneeId] =
+    useState<string | null>(user?.id ?? null);
+  const [creatingTask, setCreatingTask] = useState(false);
 
-  if (!user) {
-    return null;
-  }
+  // --- стани для створення ЗМІНИ (shift) ---
+  const [newShiftTitle, setNewShiftTitle] = useState('');
+  const [newShiftAssigneeId, setNewShiftAssigneeId] =
+    useState<string | null>(user?.id ?? null);
+  const [creatingShift, setCreatingShift] = useState(false);
 
-  // Люди з моїх груп (для user/manager)
-  const myGroupIds = useMemo(
-    () => user.groupIds ?? [],
-    [user.groupIds]
-  );
+  // планування на тиждень
+  const [newShiftDayOffset, setNewShiftDayOffset] = useState<number>(0); // 0 = dziś
+  const [newShiftStartHour, setNewShiftStartHour] = useState<number>(8);
+  const [newShiftEndHour, setNewShiftEndHour] = useState<number>(16);
 
-  const teammates: User[] = useMemo(() => {
-    if (isAdmin) {
-      // адмін як "zespół" має всіх
-      return users.filter(u => u.id !== user.id);
+  const canAssignOthers = isAdmin || isManager;
+  const userId = user?.id ?? null;
+  const myGroupIds = user?.groupIds ?? [];
+
+  /** --- ДОСТУПНІ КОРИСТУВАЧІ ДЛЯ ЗАДАЧ/ГРАФІКУ --- */
+
+  const availableUsers: User[] = useMemo(() => {
+    // тільки люди з тих самих груп, що й я
+    const sameGroupUsers = users.filter(u =>
+      u.groupIds?.some(g => myGroupIds.includes(g))
+    );
+    if (!canAssignOthers) {
+      // звичайний юзер бачить тільки себе
+      return sameGroupUsers.filter(u => u.id === userId);
     }
-    // всі, хто має хоча б одну спільну групу зі мною
-    const setIds = new Set<string>();
-    return users.filter(u => {
-      if (u.id === user.id) return false;
-      const common = u.groupIds?.some(gId => myGroupIds.includes(gId));
-      if (!common) return false;
-      if (setIds.has(u.id)) return false;
-      setIds.add(u.id);
-      return true;
+    // manager/admin → всі з моїх груп
+    return sameGroupUsers;
+  }, [users, myGroupIds, canAssignOthers, userId]);
+
+  // допоміжний сет для швидкої фільтрації змін для „Grafik wszystkich”
+  const allowedUserIdsForSchedule = useMemo(
+    () => new Set(availableUsers.map(u => u.id)),
+    [availableUsers]
+  );
+
+  /** --- ZADANIA --- */
+
+  // "Moje" zadania: przypisane do mnie LUB utworzone przeze mnie
+  const myTasks = useMemo(() => {
+    if (!userId) return [];
+    return tasks.filter(
+      t =>
+        t.type === 'task' &&
+        (t.assignedToId === userId || t.createdById === userId)
+    );
+  }, [tasks, userId]);
+
+  const filteredTasks = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return myTasks;
+    return myTasks.filter(
+      t =>
+        t.title.toLowerCase().includes(term) ||
+        (t.description || '').toLowerCase().includes(term)
+    );
+  }, [myTasks, search]);
+
+  const sortedActiveTasks = useMemo(() => {
+    const active = filteredTasks.filter(
+      t => t.status !== 'done'
+    );
+
+    return [...active].sort((a, b) => {
+      const pa =
+        priorityWeight[a.priority || 'none'] ?? priorityWeight.none;
+      const pb =
+        priorityWeight[b.priority || 'none'] ?? priorityWeight.none;
+
+      if (pa !== pb) return pb - pa; // high -> low
+
+      const da = a.createdAt ? Date.parse(a.createdAt) : 0;
+      const db = b.createdAt ? Date.parse(b.createdAt) : 0;
+      if (da !== db) return db - da; // nowsze wyżej
+
+      return a.title.localeCompare(b.title, 'pl', {
+        sensitivity: 'base',
+      });
     });
-  }, [users, user.id, myGroupIds, isAdmin]);
+  }, [filteredTasks]);
 
-  // Завдання (type='task')
-  const taskItems: Task[] = useMemo(() => {
-    const onlyTasks = tasks.filter(t => t.type === 'task');
+  const sortedDoneTasks = useMemo(() => {
+    const done = filteredTasks.filter(t => t.status === 'done');
 
-    if (tasksViewMode === 'me' || (!isManager && !isAdmin)) {
-      // завжди "Moje zadania" для звичайного юзера
-      return onlyTasks.filter(t => t.assignedToId === user.id);
-    }
+    return [...done].sort((a, b) => {
+      const da = a.createdAt ? Date.parse(a.createdAt) : 0;
+      const db = b.createdAt ? Date.parse(b.createdAt) : 0;
+      return db - da;
+    });
+  }, [filteredTasks]);
 
-    // 'team' mode для manager/admin
-    if (isAdmin) {
-      return onlyTasks;
-    }
+  /** --- GRAFIK --- */
 
-    // manager: задачі людей із його груп
-    const teamIds = new Set(teammates.map(t => t.id));
-    return onlyTasks.filter(t =>
-      t.assignedToId ? teamIds.has(t.assignedToId) : false
+  const shifts = useMemo(
+    () => tasks.filter(t => t.type === 'shift'),
+    [tasks]
+  );
+
+  const myShifts = useMemo(() => {
+    if (!userId) return [];
+    return shifts.filter(s => s.assignedToId === userId);
+  }, [shifts, userId]);
+
+  const allShiftsForMyGroupsSorted = useMemo(() => {
+    // тільки зміни людей із моїх груп
+    const filtered = shifts.filter(
+      s =>
+        s.assignedToId && allowedUserIdsForSchedule.has(s.assignedToId)
     );
-  }, [tasks, user.id, tasksViewMode, isManager, isAdmin, teammates]);
+    return [...filtered].sort((a, b) => {
+      const da = a.startTime ? Date.parse(a.startTime) : 0;
+      const db = b.startTime ? Date.parse(b.startTime) : 0;
+      return da - db;
+    });
+  }, [shifts, allowedUserIdsForSchedule]);
 
-  // Зміни (type='shift')
-  const shiftItems: Task[] = useMemo(() => {
-    const shifts = tasks.filter(t => t.type === 'shift');
+  const scheduleData = useMemo(
+    () => (scheduleScope === 'mine' ? myShifts : allShiftsForMyGroupsSorted),
+    [scheduleScope, myShifts, allShiftsForMyGroupsSorted]
+  );
 
-    // Якщо не показуємо всіх — тільки мій графік
-    if (!showAllSchedule) {
-      return shifts.filter(t => t.assignedToId === user.id);
-    }
+  /** --- HANDLERY --- */
 
-    if (isAdmin) {
-      return shifts;
-    }
+  const handleToggleDone = async (task: Task) => {
+    if (task.type !== 'task') return;
 
-    // Показати графік всіх людей з моїх груп
-    const teamIds = new Set<string>(teammates.map(t => t.id));
-    teamIds.add(user.id);
-    return shifts.filter(t =>
-      t.assignedToId ? teamIds.has(t.assignedToId) : false
-    );
-  }, [tasks, user.id, showAllSchedule, isAdmin, teammates]);
+    const current: TaskStatus = task.status || 'todo';
+    const next: TaskStatus =
+      current === 'done' ? 'in_progress' : 'done';
 
-  const cycleStatus = (current?: TaskStatus): TaskStatus => {
-    if (!current || current === 'todo') return 'in_progress';
-    if (current === 'in_progress') return 'done';
-    return 'todo';
-  };
-
-  const handleToggleStatus = async (task: Task) => {
-    if (!task.assignedToId) return;
-
-    // user може змінювати тільки свої задачі
-    const isMine = task.assignedToId === user.id;
-
-    if (!isMine && !isManager && !isAdmin) {
-      Alert.alert('Brak uprawnień', 'Możesz zmieniać tylko swoje zadania.');
-      return;
-    }
-
-    const nextStatus = cycleStatus(task.status);
     try {
-      await updateTaskStatus(task.id, nextStatus);
-    } catch (e: any) {
-      Alert.alert('Błąd', 'Nie udało się zaktualizować zadania.');
+      await updateTask(task.id, { status: next });
+    } catch (e) {
+      console.warn('Failed to update task status', e);
     }
   };
 
   const handleCreateTask = async () => {
-    if (!newTitle.trim()) {
+    if (!user) {
+      Alert.alert('Błąd', 'Brak zalogowanego użytkownika.');
+      return;
+    }
+
+    if (!newTaskTitle.trim()) {
       Alert.alert('Błąd', 'Podaj tytuł zadania.');
       return;
     }
 
-    let assignedToId = user.id;
+    const assigneeId = newTaskAssigneeId ?? user.id;
+    const assigneeUser =
+      users.find(u => u.id === assigneeId) || user;
 
-    if ((isManager || isAdmin) && selectedAssigneeId) {
-      assignedToId = selectedAssigneeId;
-    }
-
-    setCreating(true);
     try {
+      setCreatingTask(true);
+
       await createTask(
         {
           type: 'task',
-          title: newTitle.trim(),
-          description: newDescription.trim() || undefined,
-          assignedToId,
-          // на демо можна не вказувати groupId/company,
-          // або взяти першу групу користувача
-          groupId: user.groupIds[0],
-          company: user.companyIds[0],
+          title: newTaskTitle.trim(),
+          description: newTaskDescription.trim() || undefined,
+          assignedToId: assigneeId,
+          company: assigneeUser.companyIds?.[0] || 'Nieznana firma',
+          priority: newTaskPriority,
         },
         user.id
       );
-      setNewTitle('');
-      setNewDescription('');
-      setSelectedAssigneeId(null);
-    } catch (e: any) {
+
+      setNewTaskTitle('');
+      setNewTaskDescription('');
+      setNewTaskPriority('medium');
+      setNewTaskAssigneeId(user.id);
+
+      Alert.alert('Sukces', 'Zadanie zostało utworzone.');
+    } catch (e) {
+      console.warn('Failed to create task', e);
       Alert.alert('Błąd', 'Nie udało się utworzyć zadania.');
     } finally {
-      setCreating(false);
+      setCreatingTask(false);
     }
   };
 
+  const handleCreateShift = async () => {
+    if (!user) {
+      Alert.alert('Błąd', 'Brak zalogowanego użytkownika.');
+      return;
+    }
+
+    if (!newShiftAssigneeId) {
+      Alert.alert(
+        'Błąd',
+        'Wybierz użytkownika, dla którego chcesz dodać zmianę.'
+      );
+      return;
+    }
+
+    const now = new Date();
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    base.setDate(base.getDate() + newShiftDayOffset);
+
+    const start = new Date(base);
+    start.setHours(newShiftStartHour, 0, 0, 0);
+
+    const end = new Date(base);
+    end.setHours(newShiftEndHour, 0, 0, 0);
+
+    if (end <= start) {
+      Alert.alert(
+        'Błąd',
+        'Godzina zakończenia musi być późniejsza niż rozpoczęcia.'
+      );
+      return;
+    }
+
+    if (start <= now) {
+      Alert.alert(
+        'Błąd',
+        'Nie można dodać zmiany w przeszłości.'
+      );
+      return;
+    }
+
+    const assignedUser = users.find(u => u.id === newShiftAssigneeId);
+    const title =
+      newShiftTitle.trim() || 'Zmiana robocza';
+
+    try {
+      setCreatingShift(true);
+
+      await createTask(
+        {
+          type: 'shift',
+          title,
+          assignedToId: newShiftAssigneeId,
+          company:
+            assignedUser?.companyIds?.[0] || 'Nieznana firma',
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+        },
+        user.id
+      );
+
+      setNewShiftTitle('');
+      Alert.alert(
+        'Sukces',
+        'Zmiana została dodana do grafiku.'
+      );
+    } catch (e) {
+      console.warn('Failed to create shift', e);
+      Alert.alert(
+        'Błąd',
+        'Nie udało się dodać zmiany.'
+      );
+    } finally {
+      setCreatingShift(false);
+    }
+  };
+
+  /** --- РЕНДЕР ЕЛЕМЕНТІВ --- */
+
   const renderTaskItem = ({ item }: { item: Task }) => {
-    const assignee = users.find(u => u.id === item.assignedToId);
-    const isMine = item.assignedToId === user.id;
+    const isDone = item.status === 'done';
+    const isInProgress = item.status === 'in_progress';
+
+    const priorityLabel =
+      item.priority === 'high'
+        ? 'Wysoki'
+        : item.priority === 'medium'
+        ? 'Średni'
+        : item.priority === 'low'
+        ? 'Niski'
+        : null;
 
     return (
-      <TouchableOpacity
+      <View
         style={[
           styles.taskCard,
-          isMine && styles.taskCardMine,
-          item.status === 'done' && styles.taskCardDone,
+          isDone && { opacity: 0.6 },
         ]}
-        onPress={() => handleToggleStatus(item)}
       >
         <View style={styles.taskHeader}>
           <Text
             style={[
               styles.taskTitle,
-              { fontSize: scaleFont(14, fontSize) },
+              {
+                fontSize: scaleFont(13, fontSize),
+                textDecorationLine: isDone ? 'line-through' : 'none',
+              },
             ]}
           >
             {item.title}
           </Text>
-          {item.status && (
-            <Text
+          {priorityLabel && (
+            <View
               style={[
-                styles.statusBadge,
-                styles[`status_${item.status}` as keyof typeof styles],
-                { fontSize: scaleFont(10, fontSize) },
+                styles.priorityChip,
+                item.priority === 'high' && styles.priorityHigh,
+                item.priority === 'medium' && styles.priorityMedium,
+                item.priority === 'low' && styles.priorityLow,
               ]}
             >
-              {item.status === 'todo'
-                ? 'TODO'
-                : item.status === 'in_progress'
-                ? 'W TOKU'
-                : 'ZROBIONE'}
-            </Text>
+              <Text
+                style={[
+                  styles.priorityText,
+                  { fontSize: scaleFont(10, fontSize) },
+                ]}
+              >
+                {priorityLabel}
+              </Text>
+            </View>
           )}
         </View>
-        {item.description ? (
+
+        {!!item.description && (
           <Text
             style={[
-              styles.taskDescription,
-              { fontSize: scaleFont(12, fontSize) },
+              styles.taskDesc,
+              { fontSize: scaleFont(11, fontSize) },
             ]}
+            numberOfLines={2}
           >
             {item.description}
           </Text>
-        ) : null}
-        <Text
-          style={[
-            styles.taskMeta,
-            { fontSize: scaleFont(10, fontSize) },
-          ]}
-        >
-          {assignee
-            ? `Przypisane do: ${assignee.name}`
-            : 'Brak przypisanego użytkownika'}
-        </Text>
-      </TouchableOpacity>
+        )}
+
+        <View style={styles.taskFooter}>
+          {item.createdAt && (
+            <Text
+              style={[
+                styles.taskMeta,
+                { fontSize: scaleFont(10, fontSize) },
+              ]}
+            >
+              Utworzone:{' '}
+              {new Date(item.createdAt).toLocaleString()}
+            </Text>
+          )}
+
+          <TouchableOpacity
+            style={[
+              styles.doneButton,
+              isDone && styles.doneButtonInactive,
+            ]}
+            onPress={() => handleToggleDone(item)}
+          >
+            <Text
+              style={[
+                styles.doneButtonText,
+                { fontSize: scaleFont(11, fontSize) },
+              ]}
+            >
+              {isDone
+                ? 'Przywróć'
+                : isInProgress
+                ? 'Odhacz jako zrobione'
+                : 'Zakończ'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   };
 
   const renderShiftItem = ({ item }: { item: Task }) => {
-    const assignee = users.find(u => u.id === item.assignedToId);
     const start = item.startTime
       ? new Date(item.startTime).toLocaleString()
       : '';
     const end = item.endTime
       ? new Date(item.endTime).toLocaleTimeString()
       : '';
+
+    const assignedUser: User | undefined =
+      users.find(u => u.id === item.assignedToId);
 
     return (
       <View style={styles.shiftCard}>
@@ -257,17 +439,19 @@ const TasksScreen: React.FC = () => {
             { fontSize: scaleFont(11, fontSize) },
           ]}
         >
-          {assignee ? assignee.name : 'Nieznany użytkownik'}
+          {start} {end ? `– ${end}` : ''}
         </Text>
-        <Text
-          style={[
-            styles.shiftMeta,
-            { fontSize: scaleFont(11, fontSize) },
-          ]}
-        >
-          {start} - {end}
-        </Text>
-        {item.company && (
+        {assignedUser && (
+          <Text
+            style={[
+              styles.shiftMeta,
+              { fontSize: scaleFont(11, fontSize) },
+            ]}
+          >
+            Pracownik: {assignedUser.name}
+          </Text>
+        )}
+        {!!item.company && (
           <Text
             style={[
               styles.shiftMeta,
@@ -281,30 +465,575 @@ const TasksScreen: React.FC = () => {
     );
   };
 
-  const showTasksTab = activeTab === 'tasks';
+  // допоміжні масиви для UI
+  const next7Days = useMemo(() => {
+    const days: { label: string; offset: number }[] = [];
+    const base = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      const day = d.toLocaleDateString('pl-PL', {
+        weekday: 'short',
+      });
+      const num = d.getDate();
+      const label = i === 0 ? `Dziś (${num})` : i === 1 ? `Jutro (${num})` : `${day} (${num})`;
+      days.push({ label, offset: i });
+    }
+    return days;
+  }, []);
+
+  const hoursPresets = [6, 8, 10, 12, 14, 16, 18, 20];
+
+  const renderTasksTab = () => (
+    <View style={styles.tabBody}>
+      {/* Додати завдання */}
+      <View style={styles.newTaskCard}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { fontSize: scaleFont(14, fontSize) },
+          ]}
+        >
+          Dodaj nowe zadanie
+        </Text>
+        <Text
+          style={[
+            styles.newTaskHint,
+            { fontSize: scaleFont(11, fontSize) },
+          ]}
+        >
+          Zadanie może być przypisane do Ciebie lub (jako manager/admin) do innej osoby.
+        </Text>
+
+        <TextInput
+          style={[
+            styles.searchInput,
+            {
+              fontSize: scaleFont(13, fontSize),
+              marginTop: 6,
+              marginBottom: 4,
+            },
+          ]}
+          placeholder="Tytuł zadania"
+          placeholderTextColor={colors.textMuted}
+          value={newTaskTitle}
+          onChangeText={setNewTaskTitle}
+        />
+
+        <TextInput
+          style={[
+            styles.searchInput,
+            {
+              fontSize: scaleFont(13, fontSize),
+              marginBottom: 6,
+              height: 70,
+              textAlignVertical: 'top',
+            },
+          ]}
+          multiline
+          placeholder="Opis (opcjonalnie)"
+          placeholderTextColor={colors.textMuted}
+          value={newTaskDescription}
+          onChangeText={setNewTaskDescription}
+        />
+
+        {/* Пріоритет */}
+        <View style={styles.priorityRow}>
+          {(['low', 'medium', 'high'] as TaskPriority[]).map(p => {
+            const selected = newTaskPriority === p;
+            const label =
+              p === 'low'
+                ? 'Niski'
+                : p === 'medium'
+                ? 'Średni'
+                : 'Wysoki';
+            return (
+              <TouchableOpacity
+                key={p}
+                style={[
+                  styles.prioritySelectChip,
+                  selected && styles.prioritySelectChipActive,
+                ]}
+                onPress={() => setNewTaskPriority(p)}
+              >
+                <Text
+                  style={[
+                    styles.prioritySelectText,
+                    {
+                      fontSize: scaleFont(11, fontSize),
+                      color: selected
+                        ? '#0b1120'
+                        : colors.text,
+                    },
+                  ]}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Кому призначити */}
+        {canAssignOthers && (
+          <Text
+            style={[
+              styles.newTaskHint,
+              {
+                fontSize: scaleFont(11, fontSize),
+                marginTop: 4,
+                marginBottom: 2,
+              },
+            ]}
+          >
+            Przypisz zadanie do:
+          </Text>
+        )}
+
+        <FlatList
+          horizontal
+          data={availableUsers}
+          keyExtractor={u => u.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 4 }}
+          renderItem={({ item }) => {
+            const selected = item.id === newTaskAssigneeId;
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.userChip,
+                  selected && styles.userChipActive,
+                ]}
+                onPress={() =>
+                  setNewTaskAssigneeId(
+                    selected ? null : item.id
+                  )
+                }
+              >
+                <Text
+                  style={[
+                    styles.userChipText,
+                    {
+                      fontSize: scaleFont(11, fontSize),
+                      color: selected
+                        ? '#0b1120'
+                        : colors.text,
+                    },
+                  ]}
+                >
+                  {item.name.split(' ')[0]}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+
+        <TouchableOpacity
+          style={[
+            styles.createTaskButton,
+            creatingTask && { opacity: 0.7 },
+          ]}
+          onPress={handleCreateTask}
+          disabled={creatingTask || !user}
+        >
+          <Text
+            style={[
+              styles.createTaskButtonText,
+              { fontSize: scaleFont(13, fontSize) },
+            ]}
+          >
+            {creatingTask ? 'Dodawanie...' : 'Dodaj zadanie'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Пошук по задачах */}
+      <TextInput
+        style={[
+          styles.searchInput,
+          { fontSize: scaleFont(13, fontSize) },
+        ]}
+        placeholder="Szukaj w moich zadaniach..."
+        placeholderTextColor={colors.textMuted}
+        value={search}
+        onChangeText={setSearch}
+      />
+
+      {/* Активні задачі */}
+      <Text
+        style={[
+          styles.sectionTitle,
+          { fontSize: scaleFont(14, fontSize) },
+        ]}
+      >
+        Aktywne ({sortedActiveTasks.length})
+      </Text>
+      {sortedActiveTasks.length === 0 ? (
+        <Text
+          style={[
+            styles.emptyText,
+            { fontSize: scaleFont(12, fontSize) },
+          ]}
+        >
+          Brak aktywnych zadań.
+        </Text>
+      ) : (
+        <FlatList
+          data={sortedActiveTasks}
+          keyExtractor={t => t.id}
+          renderItem={renderTaskItem}
+          scrollEnabled={false}
+        />
+      )}
+
+      {/* Зроблені задачі */}
+      <Text
+        style={[
+          styles.sectionTitle,
+          { fontSize: scaleFont(14, fontSize), marginTop: 12 },
+        ]}
+      >
+        Zakończone ({sortedDoneTasks.length})
+      </Text>
+      {sortedDoneTasks.length === 0 ? (
+        <Text
+          style={[
+            styles.emptyText,
+            { fontSize: scaleFont(12, fontSize) },
+          ]}
+        >
+          Brak zakończonych zadań.
+        </Text>
+      ) : (
+        <FlatList
+          data={sortedDoneTasks}
+          keyExtractor={t => t.id}
+          renderItem={renderTaskItem}
+          scrollEnabled={false}
+        />
+      )}
+    </View>
+  );
+
+  const renderScheduleTab = () => (
+    <View style={styles.tabBody}>
+      {/* Додати зміну на тиждень */}
+      <View style={styles.newShiftCard}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { fontSize: scaleFont(14, fontSize) },
+          ]}
+        >
+          Zaplanuj zmianę (do tygodnia)
+        </Text>
+        <Text
+          style={[
+            styles.newTaskHint,
+            { fontSize: scaleFont(11, fontSize) },
+          ]}
+        >
+          Wybierz dzień oraz godziny zmiany. Nie możesz ustawiać zmian w przeszłości.
+        </Text>
+
+        {/* Дні тижня */}
+        <FlatList
+          horizontal
+          data={next7Days}
+          keyExtractor={d => String(d.offset)}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 6 }}
+          renderItem={({ item }) => {
+            const selected = item.offset === newShiftDayOffset;
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.dayChip,
+                  selected && styles.dayChipActive,
+                ]}
+                onPress={() =>
+                  setNewShiftDayOffset(item.offset)
+                }
+              >
+                <Text
+                  style={[
+                    styles.dayChipText,
+                    {
+                      fontSize: scaleFont(11, fontSize),
+                      color: selected
+                        ? '#0b1120'
+                        : colors.text,
+                    },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+
+        {/* Години початку */}
+        <Text
+          style={[
+            styles.newTaskHint,
+            {
+              fontSize: scaleFont(11, fontSize),
+              marginTop: 4,
+            },
+          ]}
+        >
+          Godzina rozpoczęcia:
+        </Text>
+        <FlatList
+          horizontal
+          data={hoursPresets}
+          keyExtractor={h => `start-${h}`}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 4 }}
+          renderItem={({ item }) => {
+            const selected = item === newShiftStartHour;
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.hourChip,
+                  selected && styles.hourChipActive,
+                ]}
+                onPress={() => setNewShiftStartHour(item)}
+              >
+                <Text
+                  style={[
+                    styles.hourChipText,
+                    {
+                      fontSize: scaleFont(11, fontSize),
+                      color: selected
+                        ? '#0b1120'
+                        : colors.text,
+                    },
+                  ]}
+                >
+                  {item}:00
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+
+        {/* Години закінчення */}
+        <Text
+          style={[
+            styles.newTaskHint,
+            {
+              fontSize: scaleFont(11, fontSize),
+              marginTop: 4,
+            },
+          ]}
+        >
+          Godzina zakończenia:
+        </Text>
+        <FlatList
+          horizontal
+          data={hoursPresets}
+          keyExtractor={h => `end-${h}`}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 4 }}
+          renderItem={({ item }) => {
+            const selected = item === newShiftEndHour;
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.hourChip,
+                  selected && styles.hourChipActive,
+                ]}
+                onPress={() => setNewShiftEndHour(item)}
+              >
+                <Text
+                  style={[
+                    styles.hourChipText,
+                    {
+                      fontSize: scaleFont(11, fontSize),
+                      color: selected
+                        ? '#0b1120'
+                        : colors.text,
+                    },
+                  ]}
+                >
+                  {item}:00
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+
+        {canAssignOthers && (
+          <Text
+            style={[
+              styles.newTaskHint,
+              {
+                fontSize: scaleFont(11, fontSize),
+                marginTop: 4,
+              },
+            ]}
+          >
+            Wybierz pracownika:
+          </Text>
+        )}
+
+        <FlatList
+          horizontal
+          data={availableUsers}
+          keyExtractor={u => u.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 4 }}
+          renderItem={({ item }) => {
+            const selected = item.id === newShiftAssigneeId;
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.userChip,
+                  selected && styles.userChipActive,
+                ]}
+                onPress={() =>
+                  setNewShiftAssigneeId(
+                    selected ? null : item.id
+                  )
+                }
+              >
+                <Text
+                  style={[
+                    styles.userChipText,
+                    {
+                      fontSize: scaleFont(11, fontSize),
+                      color: selected
+                        ? '#0b1120'
+                        : colors.text,
+                    },
+                  ]}
+                >
+                  {item.name.split(' ')[0]}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+
+        <TouchableOpacity
+          style={[
+            styles.createTaskButton,
+            creatingShift && { opacity: 0.7 },
+          ]}
+          onPress={handleCreateShift}
+          disabled={creatingShift || !user}
+        >
+          <Text
+            style={[
+              styles.createTaskButtonText,
+              { fontSize: scaleFont(13, fontSize) },
+            ]}
+          >
+            {creatingShift ? 'Dodawanie...' : 'Dodaj zmianę'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Перемикач: мій / групи */}
+      <View style={styles.segmentRow}>
+        <TouchableOpacity
+          style={[
+            styles.segmentChip,
+            scheduleScope === 'mine' && styles.segmentChipActive,
+          ]}
+          onPress={() => setScheduleScope('mine')}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              {
+                fontSize: scaleFont(12, fontSize),
+                color:
+                  scheduleScope === 'mine'
+                    ? '#0b1120'
+                    : colors.text,
+              },
+            ]}
+          >
+            Mój grafik
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.segmentChip,
+            scheduleScope === 'all' && styles.segmentChipActive,
+          ]}
+          onPress={() => setScheduleScope('all')}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              {
+                fontSize: scaleFont(12, fontSize),
+                color:
+                  scheduleScope === 'all'
+                    ? '#0b1120'
+                    : colors.text,
+              },
+            ]}
+          >
+            Grafik moich grup
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {scheduleData.length === 0 ? (
+        <Text
+          style={[
+            styles.emptyText,
+            { fontSize: scaleFont(12, fontSize) },
+          ]}
+        >
+          Brak zmian do wyświetlenia.
+        </Text>
+      ) : (
+        <FlatList
+          data={scheduleData}
+          keyExtractor={s => s.id}
+          renderItem={renderShiftItem}
+        />
+      )}
+    </View>
+  );
+
+  /** --- ГОЛОВНИЙ РЕНДЕР --- */
 
   return (
     <Screen>
       <View style={styles.container}>
-        {/* Заголовок + таби */}
-        <Text style={[styles.title, { fontSize: scaleFont(20, fontSize) }]}>
+        <Text
+          style={[
+            styles.title,
+            { fontSize: scaleFont(20, fontSize) },
+          ]}
+        >
           Zadania i grafik
         </Text>
 
-        <View style={styles.tabsRow}>
+        <View style={styles.mainTabsRow}>
           <TouchableOpacity
-            onPress={() => setActiveTab('tasks')}
             style={[
-              styles.tab,
-              showTasksTab && styles.tabActive,
+              styles.mainTab,
+              mainTab === 'tasks' && styles.mainTabActive,
             ]}
+            onPress={() => setMainTab('tasks')}
           >
             <Text
               style={[
-                styles.tabText,
+                styles.mainTabText,
                 {
                   fontSize: scaleFont(13, fontSize),
-                  color: showTasksTab ? '#0b1120' : colors.text,
+                  color:
+                    mainTab === 'tasks'
+                      ? '#0b1120'
+                      : colors.text,
                 },
               ]}
             >
@@ -312,18 +1041,21 @@ const TasksScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => setActiveTab('schedule')}
             style={[
-              styles.tab,
-              !showTasksTab && styles.tabActive,
+              styles.mainTab,
+              mainTab === 'schedule' && styles.mainTabActive,
             ]}
+            onPress={() => setMainTab('schedule')}
           >
             <Text
               style={[
-                styles.tabText,
+                styles.mainTabText,
                 {
                   fontSize: scaleFont(13, fontSize),
-                  color: !showTasksTab ? '#0b1120' : colors.text,
+                  color:
+                    mainTab === 'schedule'
+                      ? '#0b1120'
+                      : colors.text,
                 },
               ]}
             >
@@ -332,245 +1064,7 @@ const TasksScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* CONTENT */}
-        {showTasksTab ? (
-          <>
-            {/* Перемикач "Moje / Zespół" для manager/admin */}
-            {(isManager || isAdmin) && (
-              <View style={styles.switchRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.switchChip,
-                    tasksViewMode === 'me' && styles.switchChipActive,
-                  ]}
-                  onPress={() => setTasksViewMode('me')}
-                >
-                  <Text
-                    style={[
-                      styles.switchText,
-                      {
-                        fontSize: scaleFont(11, fontSize),
-                        color:
-                          tasksViewMode === 'me'
-                            ? '#0b1120'
-                            : colors.text,
-                      },
-                    ]}
-                  >
-                    Moje zadania
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.switchChip,
-                    tasksViewMode === 'team' && styles.switchChipActive,
-                  ]}
-                  onPress={() => setTasksViewMode('team')}
-                >
-                  <Text
-                    style={[
-                      styles.switchText,
-                      {
-                        fontSize: scaleFont(11, fontSize),
-                        color:
-                          tasksViewMode === 'team'
-                            ? '#0b1120'
-                            : colors.text,
-                      },
-                    ]}
-                  >
-                    Zespół
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Список задач */}
-            <FlatList
-              data={taskItems}
-              keyExtractor={t => t.id}
-              renderItem={renderTaskItem}
-              ListEmptyComponent={
-                <Text
-                  style={[
-                    styles.emptyText,
-                    { fontSize: scaleFont(13, fontSize) },
-                  ]}
-                >
-                  Brak zadań do wyświetlenia.
-                </Text>
-              }
-              contentContainerStyle={{ paddingVertical: 8 }}
-            />
-
-            {/* Форма додавання задачі */}
-            <View style={styles.newTaskContainer}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { fontSize: scaleFont(15, fontSize) },
-                ]}
-              >
-                Dodaj zadanie
-              </Text>
-              {(isManager || isAdmin) && (
-                <View style={styles.assigneeRow}>
-                  <Text
-                    style={[
-                      styles.assigneeLabel,
-                      { fontSize: scaleFont(11, fontSize) },
-                    ]}
-                  >
-                    Przypisz do:
-                  </Text>
-                  <FlatList
-                    horizontal
-                    data={teammates}
-                    keyExtractor={u => u.id}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ paddingVertical: 4 }}
-                    renderItem={({ item }) => {
-                      const selected = item.id === selectedAssigneeId;
-                      return (
-                        <TouchableOpacity
-                          onPress={() =>
-                            setSelectedAssigneeId(
-                              selected ? null : item.id
-                            )
-                          }
-                          style={[
-                            styles.assigneeChip,
-                            selected && styles.assigneeChipActive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.assigneeChipText,
-                              {
-                                fontSize: scaleFont(11, fontSize),
-                                color: selected
-                                  ? '#0b1120'
-                                  : colors.text,
-                              },
-                            ]}
-                          >
-                            {item.name.split(' ')[0]}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    }}
-                  />
-                </View>
-              )}
-
-              <TextInput
-                style={[
-                  styles.input,
-                  { fontSize: scaleFont(13, fontSize) },
-                ]}
-                placeholder="Tytuł zadania"
-                placeholderTextColor={colors.textMuted}
-                value={newTitle}
-                onChangeText={setNewTitle}
-              />
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.inputMultiline,
-                  { fontSize: scaleFont(13, fontSize) },
-                ]}
-                placeholder="Opis (opcjonalnie)"
-                placeholderTextColor={colors.textMuted}
-                value={newDescription}
-                onChangeText={setNewDescription}
-                multiline
-              />
-
-              <TouchableOpacity
-                style={[
-                  styles.addButton,
-                  creating && { opacity: 0.6 },
-                ]}
-                onPress={handleCreateTask}
-                disabled={creating}
-              >
-                <Text
-                  style={[
-                    styles.addButtonText,
-                    { fontSize: scaleFont(14, fontSize) },
-                  ]}
-                >
-                  {creating ? 'Zapisywanie...' : 'Dodaj zadanie'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <>
-            {/* Grafik */}
-            <View style={styles.switchRow}>
-              <TouchableOpacity
-                style={[
-                  styles.switchChip,
-                  !showAllSchedule && styles.switchChipActive,
-                ]}
-                onPress={() => setShowAllSchedule(false)}
-              >
-                <Text
-                  style={[
-                    styles.switchText,
-                    {
-                      fontSize: scaleFont(11, fontSize),
-                      color: !showAllSchedule
-                        ? '#0b1120'
-                        : colors.text,
-                    },
-                  ]}
-                >
-                  Mój grafik
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.switchChip,
-                  showAllSchedule && styles.switchChipActive,
-                ]}
-                onPress={() => setShowAllSchedule(true)}
-              >
-                <Text
-                  style={[
-                    styles.switchText,
-                    {
-                      fontSize: scaleFont(11, fontSize),
-                      color: showAllSchedule
-                        ? '#0b1120'
-                        : colors.text,
-                    },
-                  ]}
-                >
-                  Grafik wszystkich
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <FlatList
-              data={shiftItems}
-              keyExtractor={t => t.id}
-              renderItem={renderShiftItem}
-              ListEmptyComponent={
-                <Text
-                  style={[
-                    styles.emptyText,
-                    { fontSize: scaleFont(13, fontSize) },
-                  ]}
-                >
-                  Brak zmian do wyświetlenia.
-                </Text>
-              }
-              contentContainerStyle={{ paddingVertical: 8 }}
-            />
-          </>
-        )}
+        {mainTab === 'tasks' ? renderTasksTab() : renderScheduleTab()}
       </View>
     </Screen>
   );
@@ -587,70 +1081,106 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  tabsRow: {
+  mainTabsRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  tab: {
+  mainTab: {
     flex: 1,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: 6,
+    paddingVertical: 8,
     alignItems: 'center',
-    marginRight: 6,
+    marginRight: 8,
+    backgroundColor: '#020617',
   },
-  tabActive: {
+  mainTabActive: {
     backgroundColor: colors.accent,
     borderColor: colors.accent,
   },
-  tabText: {
-    color: colors.text,
+  mainTabText: {
     fontWeight: '600',
+    color: colors.text,
   },
-  switchRow: {
-    flexDirection: 'row',
+  tabBody: {
+    flex: 1,
+  },
+  searchInput: {
+    backgroundColor: '#020617',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: colors.text,
     marginBottom: 8,
   },
-  switchChip: {
+  sectionTitle: {
+    color: colors.text,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  emptyText: {
+    color: colors.textMuted,
+    marginBottom: 8,
+  },
+
+  /* --- карточка додавання задачі --- */
+  newTaskCard: {
+    backgroundColor: colors.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 10,
+    marginBottom: 10,
+  },
+  newTaskHint: {
+    color: colors.textMuted,
+  },
+  priorityRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  prioritySelectChip: {
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: 4,
     paddingHorizontal: 10,
-    marginRight: 8,
+    paddingVertical: 4,
+    marginRight: 6,
+    backgroundColor: '#020617',
   },
-  switchChipActive: {
+  prioritySelectChipActive: {
     backgroundColor: colors.accent,
     borderColor: colors.accent,
   },
-  switchText: {
+  prioritySelectText: {
     color: colors.text,
     fontWeight: '500',
   },
-
-  emptyText: {
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 12,
+  createTaskButton: {
+    marginTop: 8,
+    borderRadius: 999,
+    backgroundColor: colors.accent,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  createTaskButtonText: {
+    color: '#0b1120',
+    fontWeight: '600',
   },
 
-  // tasks
   taskCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 12,
-    marginBottom: 8,
-  },
-  taskCardMine: {
-    borderColor: colors.accent,
-  },
-  taskCardDone: {
-    opacity: 0.7,
+    padding: 10,
+    marginBottom: 6,
   },
   taskHeader: {
     flexDirection: 'row',
@@ -663,101 +1193,83 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  taskDescription: {
-    color: colors.text,
+  taskDesc: {
+    color: colors.textMuted,
     marginTop: 4,
+  },
+  taskFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
   },
   taskMeta: {
     color: colors.textMuted,
-    marginTop: 6,
   },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  doneButton: {
     borderRadius: 999,
-    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: colors.accent,
+  },
+  doneButtonInactive: {
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  doneButtonText: {
+    color: '#0b1120',
     fontWeight: '600',
   },
-  status_todo: {
-    backgroundColor: '#f97316',
-    color: '#0b1120',
+  priorityChip: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: '#1f2937',
   },
-  status_in_progress: {
-    backgroundColor: '#22c55e',
-    color: '#0b1120',
+  priorityHigh: {
+    backgroundColor: '#ef4444',
   },
-  status_done: {
-    backgroundColor: '#38bdf8',
-    color: '#0b1120',
+  priorityMedium: {
+    backgroundColor: '#f59e0b',
+  },
+  priorityLow: {
+    backgroundColor: '#10b981',
+  },
+  priorityText: {
+    color: '#f9fafb',
+    fontWeight: '600',
   },
 
-  newTaskContainer: {
-    marginTop: 8,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+  segmentRow: {
+    flexDirection: 'row',
+    marginTop: 10,
+    marginBottom: 8,
   },
-  sectionTitle: {
-    color: colors.text,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  assigneeRow: {
-    marginBottom: 6,
-  },
-  assigneeLabel: {
-    color: colors.textMuted,
-    marginBottom: 4,
-  },
-  assigneeChip: {
+  segmentChip: {
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginRight: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+    backgroundColor: '#020617',
   },
-  assigneeChipActive: {
+  segmentChipActive: {
     backgroundColor: colors.accent,
     borderColor: colors.accent,
   },
-  assigneeChipText: {
+  segmentText: {
+    fontWeight: '500',
     color: colors.text,
   },
-  input: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    color: colors.text,
-    marginBottom: 6,
-  },
-  inputMultiline: {
-    minHeight: 60,
-    textAlignVertical: 'top',
-  },
-  addButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 20,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  addButtonText: {
-    color: '#0b1120',
-    fontWeight: '600',
-  },
-
-  // shifts
   shiftCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 12,
-    marginBottom: 8,
+    padding: 10,
+    marginBottom: 6,
   },
   shiftTitle: {
     color: colors.text,
@@ -766,5 +1278,62 @@ const styles = StyleSheet.create({
   shiftMeta: {
     color: colors.textMuted,
     marginTop: 2,
+  },
+  newShiftCard: {
+    backgroundColor: colors.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 10,
+    marginBottom: 10,
+  },
+
+  dayChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 6,
+    backgroundColor: '#020617',
+  },
+  dayChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  dayChipText: {
+    color: colors.text,
+  },
+  hourChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 6,
+    backgroundColor: '#020617',
+  },
+  hourChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  hourChipText: {
+    color: colors.text,
+  },
+  userChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 6,
+    backgroundColor: '#020617',
+  },
+  userChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  userChipText: {
+    color: colors.text,
   },
 });

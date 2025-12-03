@@ -7,7 +7,12 @@ import React, {
   ReactNode,
 } from 'react';
 import { api } from '../api/api';
-import { Task, TaskStatus, TaskType } from '../models/Task';
+import {
+  Task,
+  TaskStatus,
+  TaskType,
+  TaskPriority,
+} from '../models/Task';
 
 interface CreateTaskInput {
   type: TaskType;
@@ -18,6 +23,7 @@ interface CreateTaskInput {
   company?: string;
   startTime?: string;
   endTime?: string;
+  priority?: TaskPriority;
 }
 
 interface TasksContextValue {
@@ -25,12 +31,17 @@ interface TasksContextValue {
   loading: boolean;
   refresh: () => Promise<void>;
   createTask: (input: CreateTaskInput, createdById: string) => Promise<void>;
+  updateTask: (id: string, patch: Partial<Task>) => Promise<void>;
   updateTaskStatus: (id: string, status: TaskStatus) => Promise<void>;
 }
 
-const TasksContext = createContext<TasksContextValue | undefined>(undefined);
+const TasksContext = createContext<TasksContextValue | undefined>(
+  undefined
+);
 
-export const TasksProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const TasksProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -54,11 +65,17 @@ export const TasksProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     await loadTasks();
   };
 
-  const createTask = async (input: CreateTaskInput, createdById: string) => {
+  const createTask = async (
+    input: CreateTaskInput,
+    createdById: string
+  ) => {
+    const nowIso = new Date().toISOString();
+
     const newTask: Task = {
       id: Date.now().toString(),
       ...input,
       createdById,
+      createdAt: nowIso,
       status: input.type === 'task' ? 'todo' : undefined,
     };
 
@@ -71,14 +88,25 @@ export const TasksProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const updateTaskStatus = async (id: string, status: TaskStatus) => {
+  const updateTask = async (
+    id: string,
+    patch: Partial<Task>
+  ): Promise<void> => {
     try {
-      const { data } = await api.patch<Task>(`/tasks/${id}`, { status });
+      const { data } = await api.patch<Task>(`/tasks/${id}`, patch);
       setTasks(prev => prev.map(t => (t.id === id ? data : t)));
     } catch (e) {
-      console.warn('Failed to update task status', e);
+      console.warn('Failed to update task', e);
       throw e;
     }
+  };
+
+  const updateTaskStatus = async (
+    id: string,
+    status: TaskStatus
+  ): Promise<void> => {
+    // простий wrapper поверх updateTask
+    return updateTask(id, { status });
   };
 
   return (
@@ -88,6 +116,7 @@ export const TasksProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         loading,
         refresh,
         createTask,
+        updateTask,
         updateTaskStatus,
       }}
     >
@@ -98,6 +127,7 @@ export const TasksProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
 export const useTasks = () => {
   const ctx = useContext(TasksContext);
-  if (!ctx) throw new Error('useTasks must be used within TasksProvider');
+  if (!ctx)
+    throw new Error('useTasks must be used within TasksProvider');
   return ctx;
 };

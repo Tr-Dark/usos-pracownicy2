@@ -1,8 +1,8 @@
 // src/models/Task.ts
 
 export type TaskType = 'task' | 'shift';
-
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
+export type TaskPriority = 'low' | 'medium' | 'high';
 
 export interface Task {
   id: string;
@@ -11,16 +11,19 @@ export interface Task {
   title: string;
   description?: string;
 
-  // для type === 'task'
-  status?: TaskStatus;
-  assignedToId?: string; // кому призначено
-
-  // для всіх
-  createdById: string;   // хто створив
-  groupId?: string;      // до якої групи прив'язано
+  assignedToId?: string;   // użytkownik
+  groupId?: string;        // grupa (opcjonalnie)
   company?: string;
 
-  // для type === 'shift'
-  startTime?: string;
-  endTime?: string;
+  // tylko dla typu "task"
+  status?: TaskStatus;
+  priority?: TaskPriority;
+
+  // meta
+  createdAt?: string;      // ISO
+  createdById?: string;    // kto utworzył zadanie
+
+  // tylko dla typu "shift"
+  startTime?: string;      // ISO
+  endTime?: string;        // ISO
 }
