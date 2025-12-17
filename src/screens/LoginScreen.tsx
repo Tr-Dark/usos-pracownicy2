@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { usePrefs } from '../context/PrefsContext';
 import { scaleFont } from '../utils/scaleFont';
 import { colors } from '../theme/colors';
+import { useNetwork } from '../context/NetworkContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -23,8 +24,14 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { fontSize } = usePrefs();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { isConnected, isInternetReachable } = useNetwork();
+  const offline = !isConnected || !isInternetReachable;
 
   const onLogin = async () => {
+    if (offline) {
+      Alert.alert('Brak internetu', 'Włącz internet (Wi-Fi lub dane komórkowe) i spróbuj ponownie.');
+      return;
+    }
     if (!email || !password) {
       Alert.alert('Błąd', 'Podaj email i hasło');
       return;

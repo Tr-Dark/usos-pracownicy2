@@ -936,7 +936,6 @@ const TasksScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Перемикач: мій / групи */}
       <View style={styles.segmentRow}>
         <TouchableOpacity
           style={[
@@ -1003,7 +1002,6 @@ const TasksScreen: React.FC = () => {
     </View>
   );
 
-  /** --- ГОЛОВНИЙ РЕНДЕР --- */
 
   return (
     <Screen>

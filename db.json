@@ -164,9 +164,10 @@
       "name": "Adrian",
       "email": "adrian@com",
       "avatar": "https://i.pravatar.cc/150?u=adrian@com",
-      "position": "Junior Developer",
+      "position": "Senior Developer",
       "roles": [
-        "user"
+        "user",
+        "manager"
       ],
       "groupIds": [
         "g4"
@@ -367,6 +368,20 @@
       "toUserId": "u8",
       "text": "Co slyhac?",
       "timestamp": "2025-12-02T23:19:10.537Z"
+    },
+    {
+      "id": "1764746893719",
+      "fromUserId": "1763513916432",
+      "toUserId": "u6",
+      "text": "Pomoz mi!!!",
+      "timestamp": "2025-12-03T07:28:13.719Z"
+    },
+    {
+      "id": "1765928725787",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Czesc",
+      "timestamp": "2025-12-16T23:45:25.787Z"
     }
   ],
   "tasks": [
@@ -554,6 +569,73 @@
       "endTime": "2025-12-03T14:00:00.000Z",
       "createdById": "1764717783143",
       "createdAt": "2025-12-02T23:23:54.756Z"
+    },
+    {
+      "id": "1764746948671",
+      "type": "task",
+      "title": "Idz spac!",
+      "description": "Nie spalem 12 godzin",
+      "assignedToId": "1763513916432",
+      "company": "NovaSoft",
+      "priority": "high",
+      "createdById": "1763513916432",
+      "createdAt": "2025-12-03T07:29:08.671Z",
+      "status": "in_progress"
+    },
+    {
+      "id": "1764747001385",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "1763513916432",
+      "company": "NovaSoft",
+      "startTime": "2025-12-03T08:00:00.000Z",
+      "endTime": "2025-12-03T16:00:00.000Z",
+      "createdById": "1763513916432",
+      "createdAt": "2025-12-03T07:30:01.385Z"
+    },
+    {
+      "id": "1764747716068",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "u6",
+      "company": "NovaSoft",
+      "startTime": "2025-12-04T08:00:00.000Z",
+      "endTime": "2025-12-04T16:00:00.000Z",
+      "createdById": "u6",
+      "createdAt": "2025-12-03T07:41:56.068Z"
+    },
+    {
+      "id": "1764747720296",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "u5",
+      "company": "SalesPro",
+      "startTime": "2025-12-04T08:00:00.000Z",
+      "endTime": "2025-12-04T16:00:00.000Z",
+      "createdById": "u6",
+      "createdAt": "2025-12-03T07:42:00.296Z"
+    },
+    {
+      "id": "1764748552214",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "u6",
+      "company": "NovaSoft",
+      "startTime": "2025-12-05T10:00:00.000Z",
+      "endTime": "2025-12-05T18:00:00.000Z",
+      "createdById": "u6",
+      "createdAt": "2025-12-03T07:55:52.214Z"
+    },
+    {
+      "id": "1764748588480",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "u5",
+      "company": "SalesPro",
+      "startTime": "2025-12-05T10:00:00.000Z",
+      "endTime": "2025-12-05T18:00:00.000Z",
+      "createdById": "u6",
+      "createdAt": "2025-12-03T07:56:28.480Z"
     }
   ],
   "attendance": [
@@ -611,6 +693,117 @@
       "userId": "1764717783143",
       "timestamp": "2025-12-02T23:23:19.221Z",
       "type": "check"
+    },
+    {
+      "id": "1764747021584",
+      "userId": "1763513916432",
+      "timestamp": "2025-12-03T07:30:21.584Z",
+      "type": "check",
+      "groupId": "g4"
+    },
+    {
+      "id": "1764747025148",
+      "userId": "1763513916432",
+      "timestamp": "2025-12-03T07:30:25.148Z",
+      "type": "check",
+      "groupId": "g4"
+    },
+    {
+      "id": "1764747032415",
+      "userId": "1763513916432",
+      "timestamp": "2025-12-03T07:30:32.415Z",
+      "type": "check",
+      "groupId": "g4"
+    },
+    {
+      "id": "1765927427587",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:23:47.587Z"
+    },
+    {
+      "id": "1765927431375",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:23:51.375Z"
+    },
+    {
+      "id": "1765927434862",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:23:54.862Z"
+    },
+    {
+      "id": "1765927441364",
+      "userId": "u6",
+      "scannedValue": "USOS|ATTENDANCE|user=u6|ts=2025-12-16T23:24:01.363Z",
+      "timestamp": "2025-12-16T23:24:01.364Z"
+    },
+    {
+      "id": "1765927445137",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:24:05.137Z"
+    },
+    {
+      "id": "1765927449876",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:24:09.876Z"
+    },
+    {
+      "id": "1765927455279",
+      "userId": "u6",
+      "scannedValue": "USOS|ATTENDANCE|user=u6|ts=2025-12-16T23:24:15.279Z",
+      "timestamp": "2025-12-16T23:24:15.279Z"
+    },
+    {
+      "id": "1765928484860",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:41:24.860Z"
+    },
+    {
+      "id": "1765928496087",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:41:36.087Z"
+    },
+    {
+      "id": "1765928554707",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:42:34.707Z"
+    },
+    {
+      "id": "1765928579470",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:42:59.470Z"
+    },
+    {
+      "id": "1765928589620",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:43:09.620Z"
+    },
+    {
+      "id": "1765928595222",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:43:15.222Z"
+    },
+    {
+      "id": "1765928611916",
+      "userId": "u6",
+      "scannedValue": "USOS|ATTENDANCE|user=u6|ts=2025-12-16T23:43:31.916Z",
+      "timestamp": "2025-12-16T23:43:31.916Z"
+    },
+    {
+      "id": "1765928732728",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-16T23:45:32.728Z"
     }
   ]
 }

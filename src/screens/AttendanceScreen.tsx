@@ -1,283 +1,262 @@
 // src/screens/AttendanceScreen.tsx
-import React, { useEffect, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Screen } from '../components/Screen';
-import { useAuth } from '../context/AuthContext';
-import { usePrefs } from '../context/PrefsContext';
 import { colors } from '../theme/colors';
+import { usePrefs } from '../context/PrefsContext';
 import { scaleFont } from '../utils/scaleFont';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../api/api';
-import { Attendance } from '../models/Attendance';
-import { useGroups } from '../context/GroupsContext';
+import { useNetwork } from '../context/NetworkContext';
 
-const AttendanceScreen: React.FC = () => {
-  const { user } = useAuth();
+type Attendance = {
+  id: string;
+  userId: string;
+  scannedValue: string;
+  timestamp: string;
+};
+
+const demoQr = (userId: string) =>
+  `USOS|ATTENDANCE|user=${userId}|ts=${new Date().toISOString()}`;
+
+export default function AttendanceScreen() {
   const { fontSize } = usePrefs();
-  const { visibleGroups } = useGroups();
+  const { user } = useAuth();
+  const { isConnected, isInternetReachable } = useNetwork();
 
-  const [now, setNow] = useState<Date>(new Date());
-  const [records, setRecords] = useState<Attendance[]>([]);
-  const [loading, setLoading] = useState(false);
+  const offline = !isConnected || !isInternetReachable;
+
+  const [permission, requestPermission] = useCameraPermissions();
+  const [lastScan, setLastScan] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
+  const [scanning, setScanning] = useState(false);
+
+  const canScan = useMemo(() => {
+    return Boolean(user) && !saving && !cooldown;
+  }, [user, saving, cooldown]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+    if (!permission?.granted) requestPermission();
+  }, [permission?.granted, requestPermission]);
 
-  useEffect(() => {
+  const saveAttendance = async (value: string) => {
     if (!user) return;
 
-    const loadAttendance = async () => {
-      try {
-        setLoading(true);
-        const { data } = await api.get<Attendance[]>('/attendance', {
-          params: {
-            userId: user.id,
-            _sort: 'timestamp',
-            _order: 'desc',
-          },
-        });
-        setRecords(data);
-      } catch (e) {
-        console.warn('Failed to load attendance', e);
-        Alert.alert('Błąd', 'Nie udało się pobrać obecności.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadAttendance();
-  }, [user?.id]);
-
-  if (!user) return null;
-
-  const handleCheckIn = async () => {
-    if (saving) return;
-
-    const timestamp = new Date().toISOString();
-    const groupId = visibleGroups[0]?.id;
-
-    const newRecord: Attendance = {
-      id: Date.now().toString(),
-      userId: user.id,
-      timestamp,
-      type: 'check',
-      groupId,
-    };
+    if (offline) {
+      Alert.alert(
+        'Brak internetu',
+        'Nie można zapisać obecności bez internetu!'
+      );
+      return;
+    }
 
     try {
       setSaving(true);
-      const { data } = await api.post<Attendance>('/attendance', newRecord);
-      setRecords(prev => [data, ...prev]);
+
+      const payload: Attendance = {
+        id: Date.now().toString(),
+        userId: user.id,
+        scannedValue: value,
+        timestamp: new Date().toISOString(),
+      };
+
+      await api.post('/attendance', payload);
+
+      setLastScan(value);
+      Alert.alert('Sukces', 'Obecność zarejestrowana ✅');
     } catch (e) {
-      console.warn('Failed to add attendance', e);
-      Alert.alert('Błąd', 'Nie udało się zarejestrować obecności.');
+      console.warn('saveAttendance failed', e);
+      Alert.alert('Błąd', 'Nie udało się zapisać obecności');
     } finally {
       setSaving(false);
+      setCooldown(true);
+      setTimeout(() => setCooldown(false), 1500);
     }
   };
 
-  const renderItem = ({ item }: { item: Attendance }) => {
-    const date = new Date(item.timestamp);
-    const dateStr = date.toLocaleDateString();
-    const timeStr = date.toLocaleTimeString();
+  const startScan = () => {
+    if (saving) return;
 
-    return (
-      <View style={styles.recordCard}>
-        <Text
-          style={[
-            styles.recordText,
-            { fontSize: scaleFont(13, fontSize) },
-          ]}
-        >
-          {dateStr} • {timeStr}
-        </Text>
-        <Text
-          style={[
-            styles.recordSub,
-            { fontSize: scaleFont(11, fontSize) },
-          ]}
-        >
-          Typ: check-in
-        </Text>
-      </View>
-    );
+    if (!user) {
+      Alert.alert('Błąd', 'Zaloguj się najpierw');
+      return;
+    }
+
+    setLastScan('');
+    setScanning(true);
+
+    setTimeout(() => {
+      setScanning(prev => {
+        if (prev) {
+          Alert.alert(
+            'Nie znaleziono QR',
+            'Spróbuj ponownie i ustaw kod QR w kadrze.'
+          );
+        }
+        return false;
+      });
+    }, 8000);
   };
 
-  const nowDate = now.toLocaleDateString();
-  const nowTime = now.toLocaleTimeString();
+  const onBarcodeScanned = ({ data }: { data: string }) => {
+    if (!scanning || !canScan) return;
+
+    setScanning(false);
+    saveAttendance(data);
+  };
+
+  if (!permission) {
+    return (
+      <Screen>
+        <View style={styles.center}>
+          <Text style={[styles.text, { fontSize: scaleFont(14, fontSize) }]}>
+            Ładowanie uprawnień kamery...
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <Screen>
+        <View style={styles.center}>
+          <Text style={[styles.text, { fontSize: scaleFont(14, fontSize) }]}>
+            Brak dostępu do kamery.
+          </Text>
+          <TouchableOpacity style={styles.primaryBtn} onPress={requestPermission}>
+            <Text style={[styles.primaryBtnText, { fontSize: scaleFont(13, fontSize) }]}>
+              Przyznaj uprawnienia
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
       <View style={styles.container}>
-        <Text style={[styles.title, { fontSize: scaleFont(20, fontSize) }]}>
-          Rejestracja obecności
+        <Text style={[styles.title, { fontSize: scaleFont(18, fontSize) }]}>
+          Rejestracja obecności (QR)
         </Text>
 
-        <View style={styles.cameraPlaceholder}>
-          <Text
-            style={[
-              styles.cameraText,
-              { fontSize: scaleFont(13, fontSize) },
-            ]}
-          >
-            Podgląd kamery (placeholder)
-          </Text>
+        <View style={styles.cameraWrap}>
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            facing={'back' as CameraType}
+            onBarcodeScanned={scanning ? onBarcodeScanned : undefined}
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+          />
+          <View style={styles.overlay}>
+            <Text style={[styles.overlayText, { fontSize: scaleFont(12, fontSize) }]}>
+              {scanning ? 'Skanowanie... ustaw QR w kadrze' : 'Naciśnij "Skanuj QR" i ustaw QR w kadrze'}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.timeBox}>
-          <Text
-            style={[
-              styles.timeLabel,
-              { fontSize: scaleFont(12, fontSize) },
-            ]}
-          >
-            Aktualny czas
+        <View style={styles.card}>
+          <Text style={[styles.label, { fontSize: scaleFont(12, fontSize) }]}>
+            Ostatni skan:
           </Text>
           <Text
-            style={[
-              styles.timeValue,
-              { fontSize: scaleFont(18, fontSize) },
-            ]}
+            style={[styles.value, { fontSize: scaleFont(12, fontSize) }]}
+            numberOfLines={2}
           >
-            {nowDate} • {nowTime}
+            {lastScan || '—'}
           </Text>
+
+          <TouchableOpacity
+            style={[
+              styles.primaryBtn,
+              (saving || !user) && { opacity: 0.7 },
+            ]}
+            disabled={saving || !user}
+            onPress={startScan}
+          >
+            <Text style={[styles.primaryBtnText, { fontSize: scaleFont(13, fontSize) }]}>
+              {scanning ? 'Skanowanie...' : 'Skanuj QR'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.secondaryBtn,
+              (!user || saving) && { opacity: 0.7 },
+            ]}
+            disabled={!user || saving}
+            onPress={() => user && saveAttendance(demoQr(user.id))}
+          >
+            <Text style={[styles.secondaryBtnText, { fontSize: scaleFont(13, fontSize) }]}>
+              Symuluj skan (demo)
+            </Text>
+          </TouchableOpacity>
+
         </View>
-
-        <TouchableOpacity
-          style={[styles.button, saving && { opacity: 0.7 }]}
-          onPress={handleCheckIn}
-          disabled={saving}
-        >
-          <Text
-            style={[
-              styles.buttonText,
-              { fontSize: scaleFont(15, fontSize) },
-            ]}
-          >
-            {saving ? 'Rejestruję...' : 'Zarejestruj'}
-          </Text>
-        </TouchableOpacity>
-
-        <Text
-          style={[
-            styles.sectionTitle,
-            { fontSize: scaleFont(14, fontSize) },
-          ]}
-        >
-          Ostatnie rejestracje
-        </Text>
-
-        <FlatList
-          data={records}
-          keyExtractor={r => r.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingVertical: 4 }}
-          ListEmptyComponent={() =>
-            !loading ? (
-              <Text
-                style={[
-                  styles.emptyText,
-                  { fontSize: scaleFont(12, fontSize) },
-                ]}
-              >
-                Brak zarejestrowanej obecności.
-              </Text>
-            ) : null
-          }
-        />
       </View>
     </Screen>
   );
-};
-
-export default AttendanceScreen;
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingTop: 12,
-  },
-  title: {
-    color: colors.text,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  cameraPlaceholder: {
-    height: 160,
+  container: { flex: 1, padding: 12 },
+  title: { color: colors.text, fontWeight: '700', marginBottom: 10 },
+
+  cameraWrap: {
+    height: 320,
     borderRadius: 20,
-    backgroundColor: colors.card,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
+    backgroundColor: '#0b1220',
   },
-  cameraText: {
-    color: colors.textMuted,
-  },
-  timeBox: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 12,
-    marginBottom: 12,
-  },
-  timeLabel: {
-    color: colors.textMuted,
-    marginBottom: 4,
-  },
-  timeValue: {
-    color: colors.text,
-    fontWeight: '600',
-  },
-  button: {
-    backgroundColor: colors.accent,
-    borderRadius: 20,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  buttonText: {
-    color: '#0b1120',
-    fontWeight: '600',
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontWeight: '600',
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  recordCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
+  overlay: {
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    bottom: 10,
     padding: 10,
-    marginBottom: 6,
+    borderRadius: 14,
+    backgroundColor: 'rgba(2,6,23,0.75)',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  recordText: {
-    color: colors.text,
+  overlayText: { color: colors.text, textAlign: 'center' },
+
+  card: {
+    marginTop: 12,
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  recordSub: {
-    color: colors.textMuted,
-    marginTop: 2,
+  label: { color: colors.textMuted, marginBottom: 4 },
+  value: { color: colors.text, marginBottom: 10 },
+
+  primaryBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: 999,
+    paddingVertical: 12,
+    alignItems: 'center',
   },
-  emptyText: {
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 8,
+  primaryBtnText: { color: '#0b1120', fontWeight: '700' },
+
+  secondaryBtn: {
+    marginTop: 10,
+    backgroundColor: colors.inputBg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingVertical: 12,
+    alignItems: 'center',
   },
+  secondaryBtnText: { color: colors.text, fontWeight: '700' },
+
+  hint: { marginTop: 10, color: colors.textMuted },
+
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  text: { color: colors.text, textAlign: 'center', marginBottom: 10 },
 });
