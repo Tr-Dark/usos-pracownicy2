@@ -481,7 +481,7 @@
       "title": "Przygotować raport sprzedaży Q1",
       "description": "Raport dla zarządu, prezentacja do piątku.",
       "assignedToId": "u5",
-      "status": "todo",
+      "status": "done",
       "company": "SalesPro",
       "createdAt": "2025-01-05T07:45:00.000Z",
       "priority": "high"
@@ -695,7 +695,7 @@
       "priority": "high",
       "createdById": "u1",
       "createdAt": "2026-01-18T16:14:06.087Z",
-      "status": "done"
+      "status": "in_progress"
     },
     {
       "id": "1768763305704",
@@ -707,6 +707,73 @@
       "endTime": "2026-01-19T15:00:00.000Z",
       "createdById": "u1",
       "createdAt": "2026-01-18T19:08:25.704Z"
+    },
+    {
+      "id": "1768766548538",
+      "type": "task",
+      "title": "Zaprezentuj Prezentacje",
+      "description": "Mamy spotkanie z waznym inwestorem na temat rozwoju naszej firmy",
+      "assignedToId": "u5",
+      "company": "SalesPro",
+      "priority": "high",
+      "createdById": "u5",
+      "createdAt": "2026-01-18T20:02:28.538Z",
+      "status": "todo"
+    },
+    {
+      "id": "1768767437856",
+      "type": "shift",
+      "title": "Szkolenie",
+      "assignedToId": "u1",
+      "company": "BlueMarketing",
+      "startTime": "2026-01-19T05:00:00.000Z",
+      "endTime": "2026-01-19T09:00:00.000Z",
+      "createdById": "u1",
+      "createdAt": "2026-01-18T20:17:17.856Z"
+    },
+    {
+      "id": "1768767541851",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "u4",
+      "company": "BlueMarketing",
+      "startTime": "2026-01-19T09:00:00.000Z",
+      "endTime": "2026-01-19T17:00:00.000Z",
+      "createdById": "u6",
+      "createdAt": "2026-01-18T20:19:01.851Z"
+    },
+    {
+      "id": "1768767553749",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "u4",
+      "company": "BlueMarketing",
+      "startTime": "2026-01-19T09:00:00.000Z",
+      "endTime": "2026-01-19T17:00:00.000Z",
+      "createdById": "u6",
+      "createdAt": "2026-01-18T20:19:13.749Z"
+    },
+    {
+      "id": "1768767579604",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "u6",
+      "company": "NovaSoft",
+      "startTime": "2026-01-19T09:00:00.000Z",
+      "endTime": "2026-01-19T17:00:00.000Z",
+      "createdById": "u6",
+      "createdAt": "2026-01-18T20:19:39.604Z"
+    },
+    {
+      "id": "1768767585788",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "u8",
+      "company": "BlueMarketing",
+      "startTime": "2026-01-19T09:00:00.000Z",
+      "endTime": "2026-01-19T17:00:00.000Z",
+      "createdById": "u6",
+      "createdAt": "2026-01-18T20:19:45.788Z"
     }
   ],
   "attendance": [
