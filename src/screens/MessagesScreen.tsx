@@ -1,5 +1,5 @@
 // src/screens/MessagesScreen.tsx
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -9,6 +9,10 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  RefreshControl,
+  Alert,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { Screen } from '../components/Screen';
 import { useAuth } from '../context/AuthContext';
@@ -22,17 +26,37 @@ import { colors } from '../theme/colors';
 import { Message } from '../models/Message';
 import { User } from '../models/User';
 
+const BOTTOM_THRESHOLD_PX = 60; // kiedy uznajemy, że user jest "na dole"
+
 const MessagesScreen: React.FC = () => {
   const { user: me } = useAuth();
-  const { messages, activeChatUserId, setActiveChatUserId, sendMessage } =
-    useMessages();
+  const {
+    messages,
+    activeChatUserId,
+    setActiveChatUserId,
+    sendMessage,
+    refreshMessages,
+    loading,
+    sending,
+  } = useMessages();
+
   const { users, visibleGroups } = useGroups();
   const { fontSize } = usePrefs();
+
   const [text, setText] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Flaga: czy user aktualnie pisze (żeby nie robić refresh w złym momencie)
+  const isTypingRef = useRef(false);
+
+  // Czy user jest przy końcu listy (na dole) -> wtedy można autoscroll
+  const isAtBottomRef = useRef(true);
+
+  const listRef = useRef<FlatList<Message> | null>(null);
 
   if (!me) return null;
 
-  // == Люди з моїх груп ==
+  // == Ludzie z moich grup ==
   const coworkersFromGroups: User[] = useMemo(() => {
     const myGroupIds = visibleGroups.map(g => g.id);
     const setIds = new Set<string>();
@@ -47,29 +71,17 @@ const MessagesScreen: React.FC = () => {
     });
   }, [users, visibleGroups, me.id]);
 
-  // == Адміни (завжди доступні як "support") ==
+  // == Admini jako "support" ==
   const adminUsers: User[] = useMemo(
-    () =>
-      users.filter(
-        u => u.id !== me.id && u.roles?.includes('admin')
-      ),
+    () => users.filter(u => u.id !== me.id && u.roles?.includes('admin')),
     [users, me.id]
   );
 
-  // == Обʼєднуємо: групи + адміни ==
+  // == Łączymy listy bez duplikatów ==
   const coworkers: User[] = useMemo(() => {
     const map = new Map<string, User>();
-
-    // спочатку люди з моїх груп
-    for (const u of coworkersFromGroups) {
-      map.set(u.id, u);
-    }
-
-    // потім адміни (переписують/добавляються)
-    for (const u of adminUsers) {
-      map.set(u.id, u);
-    }
-
+    for (const u of coworkersFromGroups) map.set(u.id, u);
+    for (const u of adminUsers) map.set(u.id, u);
     return Array.from(map.values());
   }, [coworkersFromGroups, adminUsers]);
 
@@ -85,7 +97,7 @@ const MessagesScreen: React.FC = () => {
   }, [coworkers, activeChatUserId, setActiveChatUserId]);
 
   const conversation: Message[] = useMemo(() => {
-    if (!me || !activeUser) return [];
+    if (!activeUser) return [];
     return messages
       .filter(
         m =>
@@ -96,21 +108,77 @@ const MessagesScreen: React.FC = () => {
         (a, b) =>
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
-  }, [messages, me, activeUser]);
+  }, [messages, me.id, activeUser]);
+
+  // Pull-to-refresh działa standardowo: tylko kiedy user jest na górze listy
+  const onRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await refreshMessages();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Auto refresh co 10 sekund, ale nie podczas pisania/wysyłania
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (isTypingRef.current) return;
+      if (sending) return;
+
+      refreshMessages().catch(() => {});
+    }, 10000);
+
+    return () => clearInterval(id);
+  }, [refreshMessages, sending]);
+
+  // Autoscroll w dół tylko wtedy, gdy user już był na dole
+  useEffect(() => {
+    if (!listRef.current) return;
+    if (conversation.length === 0) return;
+
+    if (!isAtBottomRef.current) return; // user czyta stare wiadomości
+    if (isTypingRef.current) return; // nie przeszkadzamy podczas pisania
+
+    setTimeout(() => {
+      listRef.current?.scrollToEnd({ animated: true });
+    }, 50);
+  }, [conversation.length]);
 
   const handleSend = async () => {
     if (!activeUser || !text.trim()) return;
-    await sendMessage(activeUser.id, text.trim());
+
+    const msg = text.trim();
     setText('');
+    isTypingRef.current = false;
+
+    try {
+      await sendMessage(activeUser.id, msg);
+
+      // Po wysłaniu zawsze chcemy być na dole
+      setTimeout(() => {
+        listRef.current?.scrollToEnd({ animated: true });
+      }, 50);
+    } catch (e) {
+      Alert.alert('Błąd', 'Nie udało się wysłać wiadomości.');
+      // setText(msg); // opcjonalnie przywrócić tekst
+    }
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwn = item.fromUserId === me.id;
-    const user =
-      (!isOwn && activeUser) ||
-      (isOwn && me) ||
-      undefined;
+    const user = (!isOwn && activeUser) || (isOwn && me) || undefined;
     return <MessageBubble message={item} isOwn={isOwn} user={user} />;
+  };
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
+
+    // Sprawdzamy czy user jest blisko dołu
+    const distanceFromBottom =
+      contentSize.height - (contentOffset.y + layoutMeasurement.height);
+
+    isAtBottomRef.current = distanceFromBottom <= BOTTOM_THRESHOLD_PX;
   };
 
   return (
@@ -126,17 +194,12 @@ const MessagesScreen: React.FC = () => {
           </Text>
 
           {activeUser && (
-            <Text
-              style={[
-                styles.activeUserInfo,
-                { fontSize: scaleFont(12, fontSize) },
-              ]}
-            >
+            <Text style={[styles.activeUserInfo, { fontSize: scaleFont(12, fontSize) }]}>
               {activeUser.name} • {activeUser.position}
             </Text>
           )}
 
-          {/* Горизонтальний список користувачів */}
+          {/* Lista użytkowników */}
           <FlatList
             horizontal
             style={styles.usersList}
@@ -155,13 +218,7 @@ const MessagesScreen: React.FC = () => {
                   <View style={[styles.userChip, isActive && styles.userChipActive]}>
                     <UserAvatar uri={item.avatar} label={item.name} size={44} />
                   </View>
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.userName,
-                      { fontSize: scaleFont(11, fontSize) },
-                    ]}
-                  >
+                  <Text numberOfLines={1} style={[styles.userName, { fontSize: scaleFont(11, fontSize) }]}>
                     {item.name.split(' ')[0]}
                   </Text>
                 </TouchableOpacity>
@@ -169,53 +226,63 @@ const MessagesScreen: React.FC = () => {
             }}
           />
 
-          {/* Список повідомлень */}
+          {/* Wiadomości */}
           <View style={styles.messagesWrapper}>
             {activeUser ? (
               <FlatList
+                ref={(r) => { listRef.current = r; }}
                 data={conversation}
                 keyExtractor={m => m.id}
                 renderItem={renderMessage}
                 contentContainerStyle={{ paddingVertical: 8 }}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={isRefreshing || loading}
+                    onRefresh={onRefresh}
+                    tintColor={colors.accent}
+                  />
+                }
+                onContentSizeChange={() => {
+                  // Przy pierwszym wejściu w chat: zjedź na dół
+                  if (isAtBottomRef.current) {
+                    listRef.current?.scrollToEnd({ animated: false });
+                  }
+                }}
               />
             ) : (
               <View style={styles.emptyState}>
-                <Text
-                  style={[
-                    styles.emptyText,
-                    { fontSize: scaleFont(14, fontSize) },
-                  ]}
-                >
+                <Text style={[styles.emptyText, { fontSize: scaleFont(14, fontSize) }]}>
                   Brak współpracowników do rozmowy.
                 </Text>
               </View>
             )}
           </View>
 
-          {/* Sticky input */}
+          {/* Input */}
           <View style={styles.inputRow}>
             <TextInput
-              style={[
-                styles.input,
-                { fontSize: scaleFont(14, fontSize) },
-              ]}
+              style={[styles.input, { fontSize: scaleFont(14, fontSize) }]}
               placeholder="Napisz wiadomość..."
               placeholderTextColor={colors.textMuted}
               value={text}
-              onChangeText={setText}
+              onChangeText={(v) => {
+                setText(v);
+                isTypingRef.current = v.trim().length > 0;
+              }}
+              onFocus={() => { isTypingRef.current = true; }}
+              onBlur={() => { isTypingRef.current = text.trim().length > 0; }}
               multiline
             />
+
             <TouchableOpacity
-              style={styles.sendButton}
+              style={[styles.sendButton, (sending || !text.trim()) && { opacity: 0.7 }]}
               onPress={handleSend}
+              disabled={sending || !text.trim()}
             >
-              <Text
-                style={[
-                  styles.sendButtonText,
-                  { fontSize: scaleFont(14, fontSize) },
-                ]}
-              >
-                Wyślij
+              <Text style={[styles.sendButtonText, { fontSize: scaleFont(14, fontSize) }]}>
+                {sending ? '...' : 'Wyślij'}
               </Text>
             </TouchableOpacity>
           </View>

@@ -419,6 +419,125 @@
       "toUserId": "u6",
       "text": "Asd",
       "timestamp": "2026-01-18T17:57:08.210Z"
+    },
+    {
+      "id": "1768769175279",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Siemano",
+      "timestamp": "2026-01-18T20:46:15.279Z"
+    },
+    {
+      "id": "1768769178315",
+      "fromUserId": "u1",
+      "toUserId": "u6",
+      "text": "Hallo",
+      "timestamp": "2026-01-18T20:46:18.315Z"
+    },
+    {
+      "id": "1768769197080",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Hello",
+      "timestamp": "2026-01-18T20:46:37.080Z"
+    },
+    {
+      "id": "1768769277181",
+      "fromUserId": "u1",
+      "toUserId": "u6",
+      "text": "Tak jest",
+      "timestamp": "2026-01-18T20:47:57.181Z"
+    },
+    {
+      "id": "1768769329236",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Ctm?",
+      "timestamp": "2026-01-18T20:48:49.236Z"
+    },
+    {
+      "id": "1768769354416",
+      "fromUserId": "u1",
+      "toUserId": "u6",
+      "text": "Ylkdh",
+      "timestamp": "2026-01-18T20:49:14.416Z"
+    },
+    {
+      "id": "1768769366927",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Bum",
+      "timestamp": "2026-01-18T20:49:26.927Z"
+    },
+    {
+      "id": "1768769369323",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Bravo ty",
+      "timestamp": "2026-01-18T20:49:29.323Z"
+    },
+    {
+      "id": "1768769513683",
+      "fromUserId": "u1",
+      "toUserId": "u6",
+      "text": "Ślepy jesteś",
+      "timestamp": "2026-01-18T20:51:53.683Z"
+    },
+    {
+      "id": "1768770654595",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Juhu",
+      "timestamp": "2026-01-18T21:10:54.595Z"
+    },
+    {
+      "id": "1768770663631",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Juhu",
+      "timestamp": "2026-01-18T21:11:03.631Z"
+    },
+    {
+      "id": "1768771101071",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Halo",
+      "timestamp": "2026-01-18T21:18:21.071Z"
+    },
+    {
+      "id": "1768771132842",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Jkggg",
+      "timestamp": "2026-01-18T21:18:52.842Z"
+    },
+    {
+      "id": "1768771288285",
+      "fromUserId": "u1",
+      "toUserId": "u6",
+      "text": "Co tam?",
+      "timestamp": "2026-01-18T21:21:28.285Z"
+    },
+    {
+      "id": "1768771304506",
+      "fromUserId": "u1",
+      "toUserId": "u6",
+      "text": "Csf",
+      "timestamp": "2026-01-18T21:21:44.506Z"
+    },
+    {
+      "id": "1768771306026",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Bujujuuubuh",
+      "timestamp": "2026-01-18T21:21:46.026Z"
+    },
+    {
+      "id": "1768771322231",
+      "fromUserId": "u1",
+      "toUserId": "u6",
+      "text": "Jdjf",
+      "timestamp": "2026-01-18T21:22:02.231Z"
     }
   ],
   "tasks": [
