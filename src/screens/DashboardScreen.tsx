@@ -1,7 +1,9 @@
 // src/screens/DashboardScreen.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   FlatList,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -21,12 +23,26 @@ import { User } from '../models/User';
 import { useNavigation } from '@react-navigation/native';
 
 const DashboardScreen: React.FC = () => {
-  const { user, isAdmin, isManager } = useAuth();
-  const { tasks } = useTasks();
-  const { messages } = useMessages();
+  const { user } = useAuth();
+
+  // bierzemy refresh + loading z kontekstów (bez auto-odświeżania)
+  const {
+    tasks,
+    refresh: refreshTasks,
+    loading: loadingTasks,
+  } = useTasks();
+
+  const {
+    messages,
+    refreshMessages,
+    loading: loadingMessages,
+  } = useMessages();
+
   const { users, visibleGroups } = useGroups();
   const { fontSize } = usePrefs();
   const navigation = useNavigation<any>();
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   if (!user) return null;
 
@@ -40,7 +56,19 @@ const DashboardScreen: React.FC = () => {
     [user.roles]
   );
 
-  // Невиконані задачі користувача
+  // --- PULL TO REFRESH ---
+  const onRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+
+      // Prosto: odświeżamy dane z serwera
+      await Promise.allSettled([refreshTasks(), refreshMessages()]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Niewykonane zadania użytkownika
   const myOpenTasks: Task[] = useMemo(
     () =>
       tasks
@@ -54,18 +82,16 @@ const DashboardScreen: React.FC = () => {
     [tasks, user.id]
   );
 
-  // Графік (зміни) користувача
+  // Grafik użytkownika
   const myShifts: Task[] = useMemo(
     () =>
       tasks
-        .filter(
-          t => t.type === 'shift' && t.assignedToId === user.id
-        )
+        .filter(t => t.type === 'shift' && t.assignedToId === user.id)
         .slice(0, 3),
     [tasks, user.id]
   );
 
-  // Останні повідомлення (5 штук)
+  // Ostatnie wiadomości (5)
   const myMessages: (Message & { other?: User })[] = useMemo(() => {
     const myMsgs = messages
       .filter(m => m.fromUserId === user.id || m.toUserId === user.id)
@@ -87,120 +113,80 @@ const DashboardScreen: React.FC = () => {
   const goToMessages = () => navigation.navigate('Messages');
   const goToAttendance = () => navigation.navigate('Attendance');
 
+  // Łączny loading dla refresh control
+  const refreshing = isRefreshing || loadingTasks || loadingMessages;
+
   return (
     <Screen>
-      <View style={styles.container}>
-        {/* Привітання + ролі */}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 16 }}
+        // RefreshControl działa dla ScrollView - idealne dla Dashboardu
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+          />
+        }
+      >
+        {/* Powitanie + role */}
         <View style={styles.headerCard}>
-          <Text
-            style={[
-              styles.greeting,
-              { fontSize: scaleFont(20, fontSize) },
-            ]}
-          >
+          <Text style={[styles.greeting, { fontSize: scaleFont(20, fontSize) }]}>
             Cześć, {user.name.split(' ')[0]} 👋
           </Text>
-          <Text
-            style={[
-              styles.subGreeting,
-              { fontSize: scaleFont(12, fontSize) },
-            ]}
-          >
+
+          <Text style={[styles.subGreeting, { fontSize: scaleFont(12, fontSize) }]}>
             Stanowisko: {user.position || '—'}
           </Text>
-          <Text
-            style={[
-              styles.subGreeting,
-              { fontSize: scaleFont(12, fontSize) },
-            ]}
-          >
+
+          <Text style={[styles.subGreeting, { fontSize: scaleFont(12, fontSize) }]}>
             Rola: {userRolesLabel || 'user'}
           </Text>
+
           {visibleGroups.length > 0 && (
-            <Text
-              style={[
-                styles.subGreeting,
-                { fontSize: scaleFont(12, fontSize) },
-              ]}
-            >
+            <Text style={[styles.subGreeting, { fontSize: scaleFont(12, fontSize) }]}>
               Grupy: {visibleGroups.map(g => g.name).join(', ')}
             </Text>
           )}
         </View>
 
-        {/* Швидкі дії */}
+        {/* Szybkie akcje */}
         <View style={styles.quickRow}>
-          <TouchableOpacity
-            style={styles.quickButton}
-            onPress={goToTasks}
-          >
-            <Text
-              style={[
-                styles.quickButtonText,
-                { fontSize: scaleFont(13, fontSize) },
-              ]}
-            >
+          <TouchableOpacity style={styles.quickButton} onPress={goToTasks}>
+            <Text style={[styles.quickButtonText, { fontSize: scaleFont(13, fontSize) }]}>
               Moje zadania
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickButton}
-            onPress={goToMessages}
-          >
-            <Text
-              style={[
-                styles.quickButtonText,
-                { fontSize: scaleFont(13, fontSize) },
-              ]}
-            >
+
+          <TouchableOpacity style={styles.quickButton} onPress={goToMessages}>
+            <Text style={[styles.quickButtonText, { fontSize: scaleFont(13, fontSize) }]}>
               Wiadomości
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickButton}
-            onPress={goToAttendance}
-          >
-            <Text
-              style={[
-                styles.quickButtonText,
-                { fontSize: scaleFont(13, fontSize) },
-              ]}
-            >
+
+          <TouchableOpacity style={styles.quickButton} onPress={goToAttendance}>
+            <Text style={[styles.quickButtonText, { fontSize: scaleFont(13, fontSize) }]}>
               Obecność
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Блок: задачі */}
+        {/* Blok: zadania */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text
-              style={[
-                styles.cardTitle,
-                { fontSize: scaleFont(15, fontSize) },
-              ]}
-            >
+            <Text style={[styles.cardTitle, { fontSize: scaleFont(15, fontSize) }]}>
               Otwarte zadania
             </Text>
             <TouchableOpacity onPress={goToTasks}>
-              <Text
-                style={[
-                  styles.cardLink,
-                  { fontSize: scaleFont(11, fontSize) },
-                ]}
-              >
+              <Text style={[styles.cardLink, { fontSize: scaleFont(11, fontSize) }]}>
                 Zobacz wszystkie
               </Text>
             </TouchableOpacity>
           </View>
 
           {myOpenTasks.length === 0 ? (
-            <Text
-              style={[
-                styles.emptyText,
-                { fontSize: scaleFont(12, fontSize) },
-              ]}
-            >
+            <Text style={[styles.emptyText, { fontSize: scaleFont(12, fontSize) }]}>
               Brak otwartych zadań.
             </Text>
           ) : (
@@ -210,36 +196,22 @@ const DashboardScreen: React.FC = () => {
               scrollEnabled={false}
               renderItem={({ item }) => (
                 <View style={styles.taskRow}>
-                  <View>
-                    <Text
-                      style={[
-                        styles.taskTitle,
-                        { fontSize: scaleFont(13, fontSize) },
-                      ]}
-                    >
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={[styles.taskTitle, { fontSize: scaleFont(13, fontSize) }]}>
                       {item.title}
                     </Text>
                     {item.description && (
                       <Text
-                        style={[
-                          styles.taskDesc,
-                          { fontSize: scaleFont(11, fontSize) },
-                        ]}
+                        style={[styles.taskDesc, { fontSize: scaleFont(11, fontSize) }]}
                         numberOfLines={1}
                       >
                         {item.description}
                       </Text>
                     )}
                   </View>
+
                   {item.status && (
-                    <Text
-                      style={[
-                        styles.taskStatus,
-                        {
-                          fontSize: scaleFont(10, fontSize),
-                        },
-                      ]}
-                    >
+                    <Text style={[styles.taskStatus, { fontSize: scaleFont(10, fontSize) }]}>
                       {item.status === 'todo'
                         ? 'TODO'
                         : item.status === 'in_progress'
@@ -253,36 +225,21 @@ const DashboardScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Блок: графік */}
+        {/* Blok: grafik */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text
-              style={[
-                styles.cardTitle,
-                { fontSize: scaleFont(15, fontSize) },
-              ]}
-            >
+            <Text style={[styles.cardTitle, { fontSize: scaleFont(15, fontSize) }]}>
               Twój grafik
             </Text>
             <TouchableOpacity onPress={goToTasks}>
-              <Text
-                style={[
-                  styles.cardLink,
-                  { fontSize: scaleFont(11, fontSize) },
-                ]}
-              >
+              <Text style={[styles.cardLink, { fontSize: scaleFont(11, fontSize) }]}>
                 Grafik wszystkich
               </Text>
             </TouchableOpacity>
           </View>
 
           {myShifts.length === 0 ? (
-            <Text
-              style={[
-                styles.emptyText,
-                { fontSize: scaleFont(12, fontSize) },
-              ]}
-            >
+            <Text style={[styles.emptyText, { fontSize: scaleFont(12, fontSize) }]}>
               Brak przypisanych zmian.
             </Text>
           ) : (
@@ -291,28 +248,14 @@ const DashboardScreen: React.FC = () => {
               keyExtractor={s => s.id}
               scrollEnabled={false}
               renderItem={({ item }) => {
-                const start = item.startTime
-                  ? new Date(item.startTime).toLocaleString()
-                  : '';
-                const end = item.endTime
-                  ? new Date(item.endTime).toLocaleTimeString()
-                  : '';
+                const start = item.startTime ? new Date(item.startTime).toLocaleString() : '';
+                const end = item.endTime ? new Date(item.endTime).toLocaleTimeString() : '';
                 return (
                   <View style={styles.shiftRow}>
-                    <Text
-                      style={[
-                        styles.shiftTitle,
-                        { fontSize: scaleFont(13, fontSize) },
-                      ]}
-                    >
+                    <Text style={[styles.shiftTitle, { fontSize: scaleFont(13, fontSize) }]}>
                       {item.title}
                     </Text>
-                    <Text
-                      style={[
-                        styles.shiftTime,
-                        { fontSize: scaleFont(11, fontSize) },
-                      ]}
-                    >
+                    <Text style={[styles.shiftTime, { fontSize: scaleFont(11, fontSize) }]}>
                       {start} {end ? `– ${end}` : ''}
                     </Text>
                   </View>
@@ -322,36 +265,21 @@ const DashboardScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Блок: останні повідомлення */}
+        {/* Blok: wiadomości */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text
-              style={[
-                styles.cardTitle,
-                { fontSize: scaleFont(15, fontSize) },
-              ]}
-            >
+            <Text style={[styles.cardTitle, { fontSize: scaleFont(15, fontSize) }]}>
               Ostatnie wiadomości
             </Text>
             <TouchableOpacity onPress={goToMessages}>
-              <Text
-                style={[
-                  styles.cardLink,
-                  { fontSize: scaleFont(11, fontSize) },
-                ]}
-              >
+              <Text style={[styles.cardLink, { fontSize: scaleFont(11, fontSize) }]}>
                 Otwórz czat
               </Text>
             </TouchableOpacity>
           </View>
 
           {myMessages.length === 0 ? (
-            <Text
-              style={[
-                styles.emptyText,
-                { fontSize: scaleFont(12, fontSize) },
-              ]}
-            >
+            <Text style={[styles.emptyText, { fontSize: scaleFont(12, fontSize) }]}>
               Brak wiadomości.
             </Text>
           ) : (
@@ -361,32 +289,13 @@ const DashboardScreen: React.FC = () => {
               scrollEnabled={false}
               renderItem={({ item }) => (
                 <View style={styles.msgRow}>
-                  <Text
-                    style={[
-                      styles.msgWho,
-                      { fontSize: scaleFont(12, fontSize) },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {item.other
-                      ? item.other.name
-                      : 'Nieznany użytkownik'}
+                  <Text style={[styles.msgWho, { fontSize: scaleFont(12, fontSize) }]} numberOfLines={1}>
+                    {item.other ? item.other.name : 'Nieznany użytkownik'}
                   </Text>
-                  <Text
-                    style={[
-                      styles.msgText,
-                      { fontSize: scaleFont(11, fontSize) },
-                    ]}
-                    numberOfLines={1}
-                  >
+                  <Text style={[styles.msgText, { fontSize: scaleFont(11, fontSize) }]} numberOfLines={1}>
                     {item.text}
                   </Text>
-                  <Text
-                    style={[
-                      styles.msgTime,
-                      { fontSize: scaleFont(10, fontSize) },
-                    ]}
-                  >
+                  <Text style={[styles.msgTime, { fontSize: scaleFont(10, fontSize) }]}>
                     {new Date(item.timestamp).toLocaleTimeString()}
                   </Text>
                 </View>
@@ -394,7 +303,7 @@ const DashboardScreen: React.FC = () => {
             />
           )}
         </View>
-      </View>
+      </ScrollView>
     </Screen>
   );
 };
