@@ -7,6 +7,7 @@ npx expo install @expo/vector-icons
 npx expo install @react-navigation/native @react-navigation/bottom-tabs @react-navigation/native-stack
 npx expo install expo-camera
 npm i @react-native-community/netinfo
+npx expo install expo-device
 
 npx expo start -c 
 npm run server

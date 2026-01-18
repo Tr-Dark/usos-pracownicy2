@@ -7,7 +7,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "server": "json-server --watch db.json --port 8083"
+    "server": "json-server --watch db.json --host 0.0.0.0 --port 8083"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -19,6 +19,7 @@
     "axios": "^1.13.2",
     "expo": "~54.0.25",
     "expo-camera": "~17.0.10",
+    "expo-device": "~8.0.10",
     "expo-status-bar": "~3.0.8",
     "json-server": "^1.0.0-beta.3",
     "react": "19.1.0",

@@ -636,6 +636,29 @@
       "endTime": "2025-12-05T18:00:00.000Z",
       "createdById": "u6",
       "createdAt": "2025-12-03T07:56:28.480Z"
+    },
+    {
+      "id": "1768752752883",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "u1",
+      "company": "BlueMarketing",
+      "startTime": "2026-01-20T13:00:00.000Z",
+      "endTime": "2026-01-20T15:00:00.000Z",
+      "createdById": "u1",
+      "createdAt": "2026-01-18T16:12:32.883Z"
+    },
+    {
+      "id": "1768752846087",
+      "type": "task",
+      "title": "Test 1",
+      "description": "Test desc",
+      "assignedToId": "u1",
+      "company": "BlueMarketing",
+      "priority": "high",
+      "createdById": "u1",
+      "createdAt": "2026-01-18T16:14:06.087Z",
+      "status": "done"
     }
   ],
   "attendance": [
@@ -804,6 +827,84 @@
       "userId": "u6",
       "scannedValue": "USOS DLA PRACOWNIKA",
       "timestamp": "2025-12-16T23:45:32.728Z"
+    },
+    {
+      "id": "1765953641081",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-17T06:40:41.082Z"
+    },
+    {
+      "id": "1765953747539",
+      "userId": "u6",
+      "scannedValue": "TEST DLA USOS",
+      "timestamp": "2025-12-17T06:42:27.539Z"
+    },
+    {
+      "id": "1765953760584",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-17T06:42:40.584Z"
+    },
+    {
+      "id": "1765954624020",
+      "userId": "u6",
+      "scannedValue": "TEST DLA USOS",
+      "timestamp": "2025-12-17T06:57:04.020Z"
+    },
+    {
+      "id": "1765954657987",
+      "userId": "u6",
+      "scannedValue": "TEST DLA USOS",
+      "timestamp": "2025-12-17T06:57:37.987Z"
+    },
+    {
+      "id": "1765954661118",
+      "userId": "u6",
+      "scannedValue": "USOS|ATTENDANCE|user=u6|ts=2025-12-17T06:57:41.118Z",
+      "timestamp": "2025-12-17T06:57:41.118Z"
+    },
+    {
+      "id": "1765954730050",
+      "userId": "u6",
+      "scannedValue": "TEST DLA USOS",
+      "timestamp": "2025-12-17T06:58:50.050Z"
+    },
+    {
+      "id": "1765957684333",
+      "userId": "u6",
+      "scannedValue": "TEST DLA USOS",
+      "timestamp": "2025-12-17T07:48:04.333Z"
+    },
+    {
+      "id": "1765957716971",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-17T07:48:36.971Z"
+    },
+    {
+      "id": "1765957795553",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-17T07:49:55.553Z"
+    },
+    {
+      "id": "1765957885616",
+      "userId": "u6",
+      "scannedValue": "TEST DLA USOS",
+      "timestamp": "2025-12-17T07:51:25.616Z"
+    },
+    {
+      "id": "1765957904013",
+      "userId": "u6",
+      "scannedValue": "USOS DLA PRACOWNIKA",
+      "timestamp": "2025-12-17T07:51:44.013Z"
+    },
+    {
+      "id": "1768752706654",
+      "userId": "u1",
+      "scannedValue": "test",
+      "timestamp": "2026-01-18T16:11:46.654Z"
     }
   ]
 }
