@@ -29,6 +29,22 @@ const priorityWeight: Record<TaskPriority | 'none', number> = {
   none: 0,
 };
 
+const SHIFT_TITLE_PRESETS = [
+  'Zmiana robocza',
+  'Zmiana poranna',
+  'Zmiana popołudniowa',
+  'Zmiana wieczorna',
+  'Zmiana nocna',
+  'Dyżur',
+  'Dyżur weekendowy',
+  'Nadgodziny',
+  'Szkolenie',
+  'Zastępstwo',
+] as const;
+
+type ShiftTitlePreset = (typeof SHIFT_TITLE_PRESETS)[number] | 'custom';
+
+
 const TasksScreen: React.FC = () => {
   const { user, isAdmin, isManager } = useAuth();
   const { tasks, updateTask, createTask } = useTasks();
@@ -49,13 +65,13 @@ const TasksScreen: React.FC = () => {
     useState<string | null>(user?.id ?? null);
   const [creatingTask, setCreatingTask] = useState(false);
 
-  // --- стани для створення ЗМІНИ (shift) ---
   const [newShiftTitle, setNewShiftTitle] = useState('');
+  const [shiftTitlePreset, setShiftTitlePreset] = useState<ShiftTitlePreset>('Zmiana robocza');
+
   const [newShiftAssigneeId, setNewShiftAssigneeId] =
     useState<string | null>(user?.id ?? null);
   const [creatingShift, setCreatingShift] = useState(false);
 
-  // планування на тиждень
   const [newShiftDayOffset, setNewShiftDayOffset] = useState<number>(0); // 0 = dziś
   const [newShiftStartHour, setNewShiftStartHour] = useState<number>(8);
   const [newShiftEndHour, setNewShiftEndHour] = useState<number>(16);
@@ -64,7 +80,6 @@ const TasksScreen: React.FC = () => {
   const userId = user?.id ?? null;
   const myGroupIds = user?.groupIds ?? [];
 
-  /** --- ДОСТУПНІ КОРИСТУВАЧІ ДЛЯ ЗАДАЧ/ГРАФІКУ --- */
 
   const availableUsers: User[] = useMemo(() => {
     // тільки люди з тих самих груп, що й я
@@ -273,7 +288,10 @@ const TasksScreen: React.FC = () => {
 
     const assignedUser = users.find(u => u.id === newShiftAssigneeId);
     const title =
-      newShiftTitle.trim() || 'Zmiana robocza';
+  shiftTitlePreset === 'custom'
+    ? (newShiftTitle.trim() || 'Zmiana robocza')
+    : shiftTitlePreset;
+
 
     try {
       setCreatingShift(true);
@@ -831,6 +849,7 @@ const TasksScreen: React.FC = () => {
         >
           Godzina zakończenia:
         </Text>
+        
         <FlatList
           horizontal
           data={hoursPresets}
@@ -864,6 +883,62 @@ const TasksScreen: React.FC = () => {
             );
           }}
         />
+
+        <Text
+          style={[
+            styles.newTaskHint,
+            { fontSize: scaleFont(11, fontSize), marginTop: 6 },
+          ]}
+        >
+          Tytuł zmiany:
+        </Text>
+
+        <FlatList
+          horizontal
+          data={[...SHIFT_TITLE_PRESETS, 'custom' as const]}
+          keyExtractor={(t) => t}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 6 }}
+          renderItem={({ item }) => {
+            const selected = item === shiftTitlePreset;
+            const label = item === 'custom' ? 'Inne…' : item;
+
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.shiftTitleChip,
+                  selected && styles.shiftTitleChipActive,
+                ]}
+                onPress={() => setShiftTitlePreset(item)}
+              >
+                <Text
+                  style={[
+                    styles.shiftTitleChipText,
+                    {
+                      fontSize: scaleFont(11, fontSize),
+                      color: selected ? '#0b1120' : colors.text,
+                    },
+                  ]}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+
+        {shiftTitlePreset === 'custom' && (
+          <TextInput
+            style={[
+              styles.searchInput,
+              { fontSize: scaleFont(13, fontSize), marginTop: 2 },
+            ]}
+            placeholder="Wpisz własny tytuł zmiany"
+            placeholderTextColor={colors.textMuted}
+            value={newShiftTitle}
+            onChangeText={setNewShiftTitle}
+          />
+        )}
 
         {canAssignOthers && (
           <Text
@@ -1334,4 +1409,22 @@ const styles = StyleSheet.create({
   userChipText: {
     color: colors.text,
   },
+  shiftTitleChip: {
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor: colors.border,
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  marginRight: 6,
+  backgroundColor: '#020617',
+  },
+  shiftTitleChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  shiftTitleChipText: {
+    color: colors.text,
+    fontWeight: '500',
+  },
+
 });

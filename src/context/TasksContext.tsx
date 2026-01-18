@@ -105,7 +105,6 @@ export const TasksProvider: React.FC<{ children: ReactNode }> = ({
     id: string,
     status: TaskStatus
   ): Promise<void> => {
-    // простий wrapper поверх updateTask
     return updateTask(id, { status });
   };
 
