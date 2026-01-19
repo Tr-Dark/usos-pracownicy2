@@ -89,7 +89,7 @@ const MainTabs = () => {
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={{ title: 'Dashboard' }}
+        options={{ title: 'Pulpit' }}
       />
       <Tab.Screen
         name="Groups"
@@ -159,7 +159,6 @@ const MainStackNavigator = () => {
         component={AdminPanelScreen}
         options={{
           title: 'Panel administratora',
-          // можна додати guard у самому екрані, щоб не admin не бачив
         }}
       />
     </MainStack.Navigator>
@@ -171,7 +170,7 @@ const RootNavigator = () => {
   const { darkMode } = usePrefs();
 
   if (loading) {
-    return null; // тут можна показати Splash/Loader
+    return null; 
   }
 
   const baseTheme = darkMode ? DarkTheme : DefaultTheme;

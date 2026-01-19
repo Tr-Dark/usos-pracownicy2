@@ -11,5 +11,5 @@ export interface User {
   roles: Role[];
   groupIds: string[];
   companyIds: string[];
-  password?: string; // json-server: пароль теж лежить в users
+  password?: string; 
 }

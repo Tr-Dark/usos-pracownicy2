@@ -538,6 +538,27 @@
       "toUserId": "u6",
       "text": "Jdjf",
       "timestamp": "2026-01-18T21:22:02.231Z"
+    },
+    {
+      "id": "1768843670806",
+      "fromUserId": "u1",
+      "toUserId": "u6",
+      "text": "Jak się masz?",
+      "timestamp": "2026-01-19T17:27:50.806Z"
+    },
+    {
+      "id": "1768843700897",
+      "fromUserId": "u6",
+      "toUserId": "u1",
+      "text": "Jeep",
+      "timestamp": "2026-01-19T17:28:20.897Z"
+    },
+    {
+      "id": "1768843825347",
+      "fromUserId": "u4",
+      "toUserId": "u1",
+      "text": "styrta się pali",
+      "timestamp": "2026-01-19T17:30:25.347Z"
     }
   ],
   "tasks": [
@@ -897,278 +918,28 @@
   ],
   "attendance": [
     {
-      "id": "a1",
-      "userId": "1763511642370",
-      "groupId": "g3",
-      "timestamp": "2025-01-05T07:59:30.000Z",
-      "type": "check"
+      "id": "1768843535302",
+      "userId": "u6",
+      "company": "BlueMarketing",
+      "startTime": "2026-01-19T17:25:35.302Z",
+      "endTime": "2026-01-19T17:25:38.845Z",
+      "active": false
     },
     {
-      "id": "a2",
-      "userId": "1763511642370",
-      "groupId": "g3",
-      "timestamp": "2025-01-06T07:58:10.000Z",
-      "type": "check"
+      "id": "1768843548929",
+      "userId": "u6",
+      "company": "SalesPro",
+      "startTime": "2026-01-19T17:25:48.929Z",
+      "endTime": "2026-01-19T17:25:51.049Z",
+      "active": false
     },
     {
-      "id": "a3",
-      "userId": "u2",
-      "groupId": "g2",
-      "timestamp": "2025-01-05T11:55:00.000Z",
-      "type": "check"
-    },
-    {
-      "id": "a4",
-      "userId": "u3",
-      "groupId": "g3",
-      "timestamp": "2025-01-04T08:05:00.000Z",
-      "type": "check"
-    },
-    {
-      "id": "a5",
+      "id": "1768843575003",
       "userId": "u1",
-      "groupId": "g1",
-      "timestamp": "2025-01-03T08:10:00.000Z",
-      "type": "check"
-    },
-    {
-      "id": "1764717658256",
-      "userId": "u1",
-      "timestamp": "2025-12-02T23:20:58.256Z",
-      "type": "check",
-      "groupId": "g1"
-    },
-    {
-      "id": "1764717661638",
-      "userId": "u1",
-      "timestamp": "2025-12-02T23:21:01.638Z",
-      "type": "check",
-      "groupId": "g1"
-    },
-    {
-      "id": "1764717799221",
-      "userId": "1764717783143",
-      "timestamp": "2025-12-02T23:23:19.221Z",
-      "type": "check"
-    },
-    {
-      "id": "1764747021584",
-      "userId": "1763513916432",
-      "timestamp": "2025-12-03T07:30:21.584Z",
-      "type": "check",
-      "groupId": "g4"
-    },
-    {
-      "id": "1764747025148",
-      "userId": "1763513916432",
-      "timestamp": "2025-12-03T07:30:25.148Z",
-      "type": "check",
-      "groupId": "g4"
-    },
-    {
-      "id": "1764747032415",
-      "userId": "1763513916432",
-      "timestamp": "2025-12-03T07:30:32.415Z",
-      "type": "check",
-      "groupId": "g4"
-    },
-    {
-      "id": "1765927427587",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:23:47.587Z"
-    },
-    {
-      "id": "1765927431375",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:23:51.375Z"
-    },
-    {
-      "id": "1765927434862",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:23:54.862Z"
-    },
-    {
-      "id": "1765927441364",
-      "userId": "u6",
-      "scannedValue": "USOS|ATTENDANCE|user=u6|ts=2025-12-16T23:24:01.363Z",
-      "timestamp": "2025-12-16T23:24:01.364Z"
-    },
-    {
-      "id": "1765927445137",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:24:05.137Z"
-    },
-    {
-      "id": "1765927449876",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:24:09.876Z"
-    },
-    {
-      "id": "1765927455279",
-      "userId": "u6",
-      "scannedValue": "USOS|ATTENDANCE|user=u6|ts=2025-12-16T23:24:15.279Z",
-      "timestamp": "2025-12-16T23:24:15.279Z"
-    },
-    {
-      "id": "1765928484860",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:41:24.860Z"
-    },
-    {
-      "id": "1765928496087",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:41:36.087Z"
-    },
-    {
-      "id": "1765928554707",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:42:34.707Z"
-    },
-    {
-      "id": "1765928579470",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:42:59.470Z"
-    },
-    {
-      "id": "1765928589620",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:43:09.620Z"
-    },
-    {
-      "id": "1765928595222",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:43:15.222Z"
-    },
-    {
-      "id": "1765928611916",
-      "userId": "u6",
-      "scannedValue": "USOS|ATTENDANCE|user=u6|ts=2025-12-16T23:43:31.916Z",
-      "timestamp": "2025-12-16T23:43:31.916Z"
-    },
-    {
-      "id": "1765928732728",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-16T23:45:32.728Z"
-    },
-    {
-      "id": "1765953641081",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-17T06:40:41.082Z"
-    },
-    {
-      "id": "1765953747539",
-      "userId": "u6",
-      "scannedValue": "TEST DLA USOS",
-      "timestamp": "2025-12-17T06:42:27.539Z"
-    },
-    {
-      "id": "1765953760584",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-17T06:42:40.584Z"
-    },
-    {
-      "id": "1765954624020",
-      "userId": "u6",
-      "scannedValue": "TEST DLA USOS",
-      "timestamp": "2025-12-17T06:57:04.020Z"
-    },
-    {
-      "id": "1765954657987",
-      "userId": "u6",
-      "scannedValue": "TEST DLA USOS",
-      "timestamp": "2025-12-17T06:57:37.987Z"
-    },
-    {
-      "id": "1765954661118",
-      "userId": "u6",
-      "scannedValue": "USOS|ATTENDANCE|user=u6|ts=2025-12-17T06:57:41.118Z",
-      "timestamp": "2025-12-17T06:57:41.118Z"
-    },
-    {
-      "id": "1765954730050",
-      "userId": "u6",
-      "scannedValue": "TEST DLA USOS",
-      "timestamp": "2025-12-17T06:58:50.050Z"
-    },
-    {
-      "id": "1765957684333",
-      "userId": "u6",
-      "scannedValue": "TEST DLA USOS",
-      "timestamp": "2025-12-17T07:48:04.333Z"
-    },
-    {
-      "id": "1765957716971",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-17T07:48:36.971Z"
-    },
-    {
-      "id": "1765957795553",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-17T07:49:55.553Z"
-    },
-    {
-      "id": "1765957885616",
-      "userId": "u6",
-      "scannedValue": "TEST DLA USOS",
-      "timestamp": "2025-12-17T07:51:25.616Z"
-    },
-    {
-      "id": "1765957904013",
-      "userId": "u6",
-      "scannedValue": "USOS DLA PRACOWNIKA",
-      "timestamp": "2025-12-17T07:51:44.013Z"
-    },
-    {
-      "id": "1768752706654",
-      "userId": "u1",
-      "scannedValue": "test",
-      "timestamp": "2026-01-18T16:11:46.654Z"
-    },
-    {
-      "id": "1768758768035",
-      "userId": "u6",
-      "scannedValue": "test",
-      "timestamp": "2026-01-18T17:52:48.035Z"
-    },
-    {
-      "id": "1768758768037",
-      "userId": "u6",
-      "scannedValue": "test",
-      "timestamp": "2026-01-18T17:52:48.037Z"
-    },
-    {
-      "id": "1768758788410",
-      "userId": "u6",
-      "scannedValue": "test",
-      "timestamp": "2026-01-18T17:53:08.410Z"
-    },
-    {
-      "id": "1768758788413",
-      "userId": "u6",
-      "scannedValue": "test",
-      "timestamp": "2026-01-18T17:53:08.413Z"
-    },
-    {
-      "id": "1768758788414",
-      "userId": "u6",
-      "scannedValue": "TEST DLA USOS",
-      "timestamp": "2026-01-18T17:53:08.414Z"
+      "company": "BlueMarketing",
+      "startTime": "2026-01-19T17:26:15.003Z",
+      "endTime": "2026-01-19T17:26:52.912Z",
+      "active": false
     }
   ]
 }

@@ -90,7 +90,6 @@ const ProfileScreen: React.FC = () => {
   return (
     <Screen>
       <View style={styles.container}>
-        {/* Аватар + базова інфа */}
         <View style={styles.header}>
           <UserAvatar uri={user.avatar} label={user.name} size={72} />
           <View style={styles.headerText}>
@@ -129,7 +128,6 @@ const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Інфо про групи/компанії */}
         <View style={styles.infoBox}>
           <Text
             style={[
@@ -168,7 +166,6 @@ const ProfileScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Форма редагування */}
         <View style={styles.form}>
           <Text
             style={[

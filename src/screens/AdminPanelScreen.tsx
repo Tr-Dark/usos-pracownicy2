@@ -68,9 +68,7 @@ const AdminPanelScreen: React.FC = () => {
       const hasRole = roles.includes(role);
 
       if (hasRole) {
-        // 🔻 ЗНЯТТЯ РОЛІ
         if (role === 'user') {
-          // не дозволяємо зняти 'user', якщо це єдина роль
           if (roles.length === 1) {
             Alert.alert(
               'Nie można usunąć',
@@ -81,12 +79,10 @@ const AdminPanelScreen: React.FC = () => {
         }
         roles = roles.filter(r => r !== role);
 
-        // гарантуємо, що хоча б одна роль залишилась
         if (roles.length === 0) {
           roles = ['user'];
         }
       } else {
-        // 🔼 ДОДАВАННЯ РОЛІ
         if (role === 'admin' || role === 'manager') {
           roles = Array.from(new Set([...roles, 'user', role]));
         } else {

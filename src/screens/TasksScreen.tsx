@@ -57,7 +57,6 @@ const TasksScreen: React.FC = () => {
     useState<ScheduleScope>('mine');
   const [search, setSearch] = useState('');
 
-  // --- стани для створення ЗАДАЧ ---
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskPriority, setNewTaskPriority] =
@@ -110,27 +109,21 @@ const TasksScreen: React.FC = () => {
 
 
   const availableUsers: User[] = useMemo(() => {
-    // тільки люди з тих самих груп, що й я
     const sameGroupUsers = users.filter(u =>
       u.groupIds?.some(g => myGroupIds.includes(g))
     );
     if (!canAssignOthers) {
-      // звичайний юзер бачить тільки себе
       return sameGroupUsers.filter(u => u.id === userId);
     }
-    // manager/admin → всі з моїх груп
     return sameGroupUsers;
   }, [users, myGroupIds, canAssignOthers, userId]);
 
-  // допоміжний сет для швидкої фільтрації змін для „Grafik wszystkich”
   const allowedUserIdsForSchedule = useMemo(
     () => new Set(availableUsers.map(u => u.id)),
     [availableUsers]
   );
 
   /** --- ZADANIA --- */
-
-  // "Moje" zadania: przypisane do mnie LUB utworzone przeze mnie
   const myTasks = useMemo(() => {
     if (!userId) return [];
     return tasks.filter(
@@ -196,7 +189,6 @@ const TasksScreen: React.FC = () => {
   }, [shifts, userId]);
 
   const allShiftsForMyGroupsSorted = useMemo(() => {
-    // тільки зміни людей із моїх груп
     const filtered = shifts.filter(
       s =>
         s.assignedToId && allowedUserIdsForSchedule.has(s.assignedToId)
@@ -361,7 +353,6 @@ const scheduleData = useMemo(() => {
     }
   };
 
-  /** --- РЕНДЕР ЕЛЕМЕНТІВ --- */
 
   const renderTaskItem = ({ item }: { item: Task }) => {
     const isDone = item.status === 'done';
@@ -514,7 +505,6 @@ const renderShiftItem = ({ item }: { item: Task }) => {
 };
 
 
-  // допоміжні масиви для UI
   const next7Days = useMemo(() => {
     const days: { label: string; offset: number }[] = [];
     const base = new Date();
@@ -548,7 +538,6 @@ const renderTasksTab = () => (
     keyboardShouldPersistTaps="handled"
     ListHeaderComponent={
       <View>
-        {/* Додати завдання */}
         <View style={styles.newTaskCard}>
           <Text style={[styles.sectionTitle, { fontSize: scaleFont(14, fontSize) }]}>
             Dodaj nowe zadanie
@@ -586,7 +575,6 @@ const renderTasksTab = () => (
             onChangeText={setNewTaskDescription}
           />
 
-          {/* Пріоритет */}
           <View style={styles.priorityRow}>
             {(['low', 'medium', 'high'] as TaskPriority[]).map((p) => {
               const selected = newTaskPriority === p;
@@ -617,7 +605,6 @@ const renderTasksTab = () => (
             })}
           </View>
 
-          {/* Кому призначити */}
           {canAssignOthers && (
             <Text
               style={[
@@ -674,7 +661,6 @@ const renderTasksTab = () => (
           </TouchableOpacity>
         </View>
 
-        {/* Пошук */}
         <TextInput
           style={[styles.searchInput, { fontSize: scaleFont(13, fontSize) }]}
           placeholder="Szukaj w moich zadaniach..."

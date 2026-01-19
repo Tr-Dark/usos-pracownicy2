@@ -25,7 +25,6 @@ import { useNavigation } from '@react-navigation/native';
 const DashboardScreen: React.FC = () => {
   const { user } = useAuth();
 
-  // bierzemy refresh + loading z kontekstów (bez auto-odświeżania)
   const {
     tasks,
     refresh: refreshTasks,
@@ -56,19 +55,17 @@ const DashboardScreen: React.FC = () => {
     [user.roles]
   );
 
-  // --- PULL TO REFRESH ---
   const onRefresh = async () => {
     try {
       setIsRefreshing(true);
 
-      // Prosto: odświeżamy dane z serwera
       await Promise.allSettled([refreshTasks(), refreshMessages()]);
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  // Niewykonane zadania użytkownika
+  // Niewykonane zadania użytkownika 
   const myOpenTasks: Task[] = useMemo(
     () =>
       tasks
@@ -113,7 +110,6 @@ const DashboardScreen: React.FC = () => {
   const goToMessages = () => navigation.navigate('Messages');
   const goToAttendance = () => navigation.navigate('Attendance');
 
-  // Łączny loading dla refresh control
   const refreshing = isRefreshing || loadingTasks || loadingMessages;
 
   return (

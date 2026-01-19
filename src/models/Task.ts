@@ -11,15 +11,14 @@ export interface Task {
   title: string;
   description?: string;
 
-  assignedToId?: string;   // użytkownik
-  groupId?: string;        // grupa (opcjonalnie)
+  assignedToId?: string;   
+  groupId?: string;        
   company?: string;
 
   // tylko dla typu "task"
   status?: TaskStatus;
   priority?: TaskPriority;
 
-  // meta
   createdAt?: string;      // ISO
   createdById?: string;    // kto utworzył zadanie
 

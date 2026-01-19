@@ -26,7 +26,7 @@ import { colors } from '../theme/colors';
 import { Message } from '../models/Message';
 import { User } from '../models/User';
 
-const BOTTOM_THRESHOLD_PX = 60; // kiedy uznajemy, że user jest "na dole"
+const BOTTOM_THRESHOLD_PX = 60; 
 
 const MessagesScreen: React.FC = () => {
   const { user: me } = useAuth();
@@ -46,10 +46,8 @@ const MessagesScreen: React.FC = () => {
   const [text, setText] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Flaga: czy user aktualnie pisze (żeby nie robić refresh w złym momencie)
   const isTypingRef = useRef(false);
 
-  // Czy user jest przy końcu listy (na dole) -> wtedy można autoscroll
   const isAtBottomRef = useRef(true);
 
   const listRef = useRef<FlatList<Message> | null>(null);
@@ -77,7 +75,6 @@ const MessagesScreen: React.FC = () => {
     [users, me.id]
   );
 
-  // == Łączymy listy bez duplikatów ==
   const coworkers: User[] = useMemo(() => {
     const map = new Map<string, User>();
     for (const u of coworkersFromGroups) map.set(u.id, u);
@@ -110,7 +107,6 @@ const MessagesScreen: React.FC = () => {
       );
   }, [messages, me.id, activeUser]);
 
-  // Pull-to-refresh działa standardowo: tylko kiedy user jest na górze listy
   const onRefresh = async () => {
     try {
       setIsRefreshing(true);
@@ -120,7 +116,7 @@ const MessagesScreen: React.FC = () => {
     }
   };
 
-  // Auto refresh co 10 sekund, ale nie podczas pisania/wysyłania
+  // Auto refresh co 10 sekund
   useEffect(() => {
     const id = setInterval(() => {
       if (isTypingRef.current) return;
@@ -132,13 +128,12 @@ const MessagesScreen: React.FC = () => {
     return () => clearInterval(id);
   }, [refreshMessages, sending]);
 
-  // Autoscroll w dół tylko wtedy, gdy user już był na dole
   useEffect(() => {
     if (!listRef.current) return;
     if (conversation.length === 0) return;
 
-    if (!isAtBottomRef.current) return; // user czyta stare wiadomości
-    if (isTypingRef.current) return; // nie przeszkadzamy podczas pisania
+    if (!isAtBottomRef.current) return; 
+    if (isTypingRef.current) return; 
 
     setTimeout(() => {
       listRef.current?.scrollToEnd({ animated: true });
@@ -155,13 +150,11 @@ const MessagesScreen: React.FC = () => {
     try {
       await sendMessage(activeUser.id, msg);
 
-      // Po wysłaniu zawsze chcemy być na dole
       setTimeout(() => {
         listRef.current?.scrollToEnd({ animated: true });
       }, 50);
     } catch (e) {
       Alert.alert('Błąd', 'Nie udało się wysłać wiadomości.');
-      // setText(msg); // opcjonalnie przywrócić tekst
     }
   };
 
@@ -174,7 +167,6 @@ const MessagesScreen: React.FC = () => {
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
 
-    // Sprawdzamy czy user jest blisko dołu
     const distanceFromBottom =
       contentSize.height - (contentOffset.y + layoutMeasurement.height);
 
@@ -245,7 +237,6 @@ const MessagesScreen: React.FC = () => {
                   />
                 }
                 onContentSizeChange={() => {
-                  // Przy pierwszym wejściu w chat: zjedź na dół
                   if (isAtBottomRef.current) {
                     listRef.current?.scrollToEnd({ animated: false });
                   }

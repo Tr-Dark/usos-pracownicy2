@@ -1,6 +1,6 @@
 // src/models/Attendance.ts
 
-export type AttendanceType = 'check'; // на майбутнє можна розширити: 'in' | 'out'
+export type AttendanceType = 'check';
 
 export interface Attendance {
   id: string;

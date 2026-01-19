@@ -67,14 +67,12 @@ export const GroupsProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     const userGroupIds = user.groupIds ?? [];
 
-    // менеджер бачить групи, де він manager або учасник
     if (user.roles.includes('manager')) {
       return groups.filter(
         g => g.managerId === user.id || userGroupIds.includes(g.id)
       );
     }
 
-    // звичайний user – тільки свої групи
     return groups.filter(g => userGroupIds.includes(g.id));
   }, [groups, user]);
 
@@ -84,10 +82,8 @@ export const GroupsProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       throw new Error('Grupa nie istnieje');
     }
 
-    // спочатку шукаємо локально
     let target = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
-    // якщо нема – пробуємо дотягнути з API
     if (!target) {
       const { data } = await api.get<User[]>('/users', {
         params: { email },
