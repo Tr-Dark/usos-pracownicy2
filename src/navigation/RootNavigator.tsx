@@ -12,7 +12,9 @@ import { TouchableOpacity } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
 import { usePrefs } from '../context/PrefsContext';
-import { colors } from '../theme/colors';
+// import { colors } from '../theme/colors';
+import { getColors } from '../theme/colors';
+
 
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -62,17 +64,17 @@ const AuthStack = () => (
   </AuthStackNav.Navigator>
 );
 
-const MainTabs = () => {
+const MainTabs: React.FC<{ c: ReturnType<typeof getColors> }> = ({ c }) => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.card,
-          borderTopColor: colors.border,
+          backgroundColor: c.card,
+          borderTopColor: c.border,
         },
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: c.accent,
+        tabBarInactiveTintColor: c.textMuted,
         tabBarIcon: ({ color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'home';
 
@@ -118,30 +120,27 @@ const MainTabs = () => {
 const MainStackNavigator = () => {
   const { darkMode } = usePrefs();
   const { isAdmin } = useAuth();
+  const c = getColors(darkMode);
 
   return (
     <MainStack.Navigator
       screenOptions={({ navigation }) => ({
-        headerStyle: {
-          backgroundColor: colors.background,
-        },
-        headerTintColor: colors.text,
-        headerTitleStyle: {
-          color: colors.text,
-        },
+        headerStyle: { backgroundColor: c.background },
+        headerTintColor: c.text,
+        headerTitleStyle: { color: c.text },
         headerRight: () => (
           <TouchableOpacity
             onPress={() => navigation.navigate('Settings')}
             style={{ paddingHorizontal: 8 }}
           >
-            <Ionicons name="settings-outline" size={22} color={colors.text} />
+            <Ionicons name="settings-outline" size={22} color={c.text} />
           </TouchableOpacity>
         ),
       })}
     >
       <MainStack.Screen
         name="MainTabs"
-        component={MainTabs}
+        component={() => <MainTabs c={c} />}
         options={{ headerTitle: 'USOS dla Pracowników' }}
       />
       <MainStack.Screen
@@ -168,6 +167,7 @@ const MainStackNavigator = () => {
 const RootNavigator = () => {
   const { user, loading } = useAuth();
   const { darkMode } = usePrefs();
+  const c = getColors(darkMode);
 
   if (loading) {
     return null; 
@@ -179,12 +179,12 @@ const RootNavigator = () => {
     ...baseTheme,
     colors: {
       ...baseTheme.colors,
-      primary: colors.accent,
-      background: colors.background,
-      card: colors.card,
-      text: colors.text,
-      border: colors.border,
-      notification: colors.accent,
+      primary: c.accent,
+      background: c.background,
+      card: c.card,
+      text: c.text,
+      border: c.border,
+      notification: c.accent,
     },
   };
 

@@ -22,14 +22,17 @@ import { usePrefs } from '../context/PrefsContext';
 import { MessageBubble } from '../components/MessageBubble';
 import { UserAvatar } from '../components/UserAvatar';
 import { scaleFont } from '../utils/scaleFont';
-import { colors } from '../theme/colors';
+import { getColors } from '../theme/colors';
 import { Message } from '../models/Message';
 import { User } from '../models/User';
 
-const BOTTOM_THRESHOLD_PX = 60; 
+const BOTTOM_THRESHOLD_PX = 60;
 
 const MessagesScreen: React.FC = () => {
   const { user: me } = useAuth();
+  const { darkMode, fontSize } = usePrefs() as any;
+  const c = getColors(darkMode);
+
   const {
     messages,
     activeChatUserId,
@@ -41,20 +44,16 @@ const MessagesScreen: React.FC = () => {
   } = useMessages();
 
   const { users, visibleGroups } = useGroups();
-  const { fontSize } = usePrefs();
 
   const [text, setText] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isTypingRef = useRef(false);
-
   const isAtBottomRef = useRef(true);
-
   const listRef = useRef<FlatList<Message> | null>(null);
 
   if (!me) return null;
 
-  // == Ludzie z moich grup ==
   const coworkersFromGroups: User[] = useMemo(() => {
     const myGroupIds = visibleGroups.map(g => g.id);
     const setIds = new Set<string>();
@@ -69,7 +68,6 @@ const MessagesScreen: React.FC = () => {
     });
   }, [users, visibleGroups, me.id]);
 
-  // == Admini jako "support" ==
   const adminUsers: User[] = useMemo(
     () => users.filter(u => u.id !== me.id && u.roles?.includes('admin')),
     [users, me.id]
@@ -83,7 +81,7 @@ const MessagesScreen: React.FC = () => {
   }, [coworkersFromGroups, adminUsers]);
 
   const activeUser: User | undefined = useMemo(
-    () => coworkers.find(c => c.id === activeChatUserId) ?? coworkers[0],
+    () => coworkers.find(cw => cw.id === activeChatUserId) ?? coworkers[0],
     [coworkers, activeChatUserId]
   );
 
@@ -101,10 +99,7 @@ const MessagesScreen: React.FC = () => {
           (m.fromUserId === me.id && m.toUserId === activeUser.id) ||
           (m.fromUserId === activeUser.id && m.toUserId === me.id)
       )
-      .sort(
-        (a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [messages, me.id, activeUser]);
 
   const onRefresh = async () => {
@@ -116,12 +111,10 @@ const MessagesScreen: React.FC = () => {
     }
   };
 
-  // Auto refresh co 10 sekund
   useEffect(() => {
     const id = setInterval(() => {
       if (isTypingRef.current) return;
       if (sending) return;
-
       refreshMessages().catch(() => {});
     }, 10000);
 
@@ -131,9 +124,8 @@ const MessagesScreen: React.FC = () => {
   useEffect(() => {
     if (!listRef.current) return;
     if (conversation.length === 0) return;
-
-    if (!isAtBottomRef.current) return; 
-    if (isTypingRef.current) return; 
+    if (!isAtBottomRef.current) return;
+    if (isTypingRef.current) return;
 
     setTimeout(() => {
       listRef.current?.scrollToEnd({ animated: true });
@@ -149,7 +141,6 @@ const MessagesScreen: React.FC = () => {
 
     try {
       await sendMessage(activeUser.id, msg);
-
       setTimeout(() => {
         listRef.current?.scrollToEnd({ animated: true });
       }, 50);
@@ -167,9 +158,7 @@ const MessagesScreen: React.FC = () => {
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
 
-    const distanceFromBottom =
-      contentSize.height - (contentOffset.y + layoutMeasurement.height);
-
+    const distanceFromBottom = contentSize.height - (contentOffset.y + layoutMeasurement.height);
     isAtBottomRef.current = distanceFromBottom <= BOTTOM_THRESHOLD_PX;
   };
 
@@ -180,13 +169,13 @@ const MessagesScreen: React.FC = () => {
         behavior={Platform.select({ ios: 'padding', android: undefined })}
         keyboardVerticalOffset={80}
       >
-        <View style={styles.container}>
-          <Text style={[styles.title, { fontSize: scaleFont(20, fontSize) }]}>
+        <View style={[styles.container, { backgroundColor: c.background }]}>
+          <Text style={[styles.title, { fontSize: scaleFont(20, fontSize), color: c.text }]}>
             Wiadomości
           </Text>
 
           {activeUser && (
-            <Text style={[styles.activeUserInfo, { fontSize: scaleFont(12, fontSize) }]}>
+            <Text style={[styles.activeUserInfo, { fontSize: scaleFont(12, fontSize), color: c.textMuted }]}>
               {activeUser.name} • {activeUser.position}
             </Text>
           )}
@@ -203,14 +192,14 @@ const MessagesScreen: React.FC = () => {
               const isActive = item.id === activeUser?.id;
 
               return (
-                <TouchableOpacity
-                  onPress={() => setActiveChatUserId(item.id)}
-                  style={styles.userChipWrapper}
-                >
-                  <View style={[styles.userChip, isActive && styles.userChipActive]}>
+                <TouchableOpacity onPress={() => setActiveChatUserId(item.id)} style={styles.userChipWrapper}>
+                  <View style={[styles.userChip, isActive && { borderWidth: 2, borderColor: c.accent }]}>
                     <UserAvatar uri={item.avatar} label={item.name} size={44} />
                   </View>
-                  <Text numberOfLines={1} style={[styles.userName, { fontSize: scaleFont(11, fontSize) }]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.userName, { fontSize: scaleFont(11, fontSize), color: c.text }]}
+                  >
                     {item.name.split(' ')[0]}
                   </Text>
                 </TouchableOpacity>
@@ -222,7 +211,9 @@ const MessagesScreen: React.FC = () => {
           <View style={styles.messagesWrapper}>
             {activeUser ? (
               <FlatList
-                ref={(r) => { listRef.current = r; }}
+                ref={r => {
+                  listRef.current = r;
+                }}
                 data={conversation}
                 keyExtractor={m => m.id}
                 renderItem={renderMessage}
@@ -233,7 +224,7 @@ const MessagesScreen: React.FC = () => {
                   <RefreshControl
                     refreshing={isRefreshing || loading}
                     onRefresh={onRefresh}
-                    tintColor={colors.accent}
+                    tintColor={c.accent}
                   />
                 }
                 onContentSizeChange={() => {
@@ -244,7 +235,7 @@ const MessagesScreen: React.FC = () => {
               />
             ) : (
               <View style={styles.emptyState}>
-                <Text style={[styles.emptyText, { fontSize: scaleFont(14, fontSize) }]}>
+                <Text style={[styles.emptyText, { fontSize: scaleFont(14, fontSize), color: c.textMuted }]}>
                   Brak współpracowników do rozmowy.
                 </Text>
               </View>
@@ -254,21 +245,33 @@ const MessagesScreen: React.FC = () => {
           {/* Input */}
           <View style={styles.inputRow}>
             <TextInput
-              style={[styles.input, { fontSize: scaleFont(14, fontSize) }]}
+              style={[
+                styles.input,
+                {
+                  fontSize: scaleFont(14, fontSize),
+                  backgroundColor: c.card,
+                  borderColor: c.border,
+                  color: c.text,
+                },
+              ]}
               placeholder="Napisz wiadomość..."
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={c.textMuted}
               value={text}
-              onChangeText={(v) => {
+              onChangeText={v => {
                 setText(v);
                 isTypingRef.current = v.trim().length > 0;
               }}
-              onFocus={() => { isTypingRef.current = true; }}
-              onBlur={() => { isTypingRef.current = text.trim().length > 0; }}
+              onFocus={() => {
+                isTypingRef.current = true;
+              }}
+              onBlur={() => {
+                isTypingRef.current = text.trim().length > 0;
+              }}
               multiline
             />
 
             <TouchableOpacity
-              style={[styles.sendButton, (sending || !text.trim()) && { opacity: 0.7 }]}
+              style={[styles.sendButton, { backgroundColor: c.accent }, (sending || !text.trim()) && { opacity: 0.7 }]}
               onPress={handleSend}
               disabled={sending || !text.trim()}
             >
@@ -293,11 +296,9 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   title: {
-    color: colors.text,
     fontWeight: '700',
   },
   activeUserInfo: {
-    color: colors.textMuted,
     marginTop: 2,
     marginBottom: 8,
   },
@@ -317,12 +318,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     padding: 2,
   },
-  userChipActive: {
-    borderWidth: 2,
-    borderColor: colors.accent,
-  },
   userName: {
-    color: colors.text,
     marginTop: 4,
     maxWidth: 70,
     textAlign: 'center',
@@ -337,9 +333,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyText: {
-    color: colors.textMuted,
-  },
+  emptyText: {},
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -348,17 +342,13 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     maxHeight: 100,
-    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.border,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    color: colors.text,
     marginRight: 8,
   },
   sendButton: {
-    backgroundColor: colors.accent,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,

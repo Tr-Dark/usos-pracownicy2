@@ -63,10 +63,12 @@
         "manager"
       ],
       "groupIds": [
-        "g1"
+        "g1",
+        "g2"
       ],
       "companyIds": [
-        "BlueMarketing"
+        "BlueMarketing",
+        "SalesPro"
       ],
       "password": "pass123"
     },
@@ -107,7 +109,7 @@
         "SalesPro",
         "BlueMarketing"
       ],
-      "password": "admin123"
+      "password": "riki"
     },
     {
       "id": "u7",
@@ -169,6 +171,7 @@
       "position": "Senior Developer",
       "roles": [
         "user",
+        "admin",
         "manager"
       ],
       "groupIds": [
@@ -195,6 +198,19 @@
         "NovaSoft"
       ],
       "password": "123"
+    },
+    {
+      "id": "1768850152883",
+      "name": "Baranek Show",
+      "email": "beeee",
+      "avatar": "https://i.pravatar.cc/150?u=beeee",
+      "position": "Junior",
+      "roles": [
+        "user"
+      ],
+      "groupIds": [],
+      "companyIds": [],
+      "password": "riki riki"
     }
   ],
   "groups": [
@@ -914,6 +930,63 @@
       "endTime": "2026-01-19T17:00:00.000Z",
       "createdById": "u6",
       "createdAt": "2026-01-18T20:19:45.788Z"
+    },
+    {
+      "id": "1768844005160",
+      "type": "task",
+      "title": "Prezentacja",
+      "description": "Nowy klient - Poważne",
+      "assignedToId": "u4",
+      "company": "BlueMarketing",
+      "priority": "high",
+      "createdById": "u4",
+      "createdAt": "2026-01-19T17:33:25.160Z",
+      "status": "todo"
+    },
+    {
+      "id": "1768844102838",
+      "type": "task",
+      "title": "Sprzątanie stanowiska",
+      "description": "Masz brudno na biurku",
+      "assignedToId": "u4",
+      "company": "BlueMarketing",
+      "priority": "low",
+      "createdById": "u4",
+      "createdAt": "2026-01-19T17:35:02.838Z",
+      "status": "todo"
+    },
+    {
+      "id": "1768844116764",
+      "type": "shift",
+      "title": "Zmiana robocza",
+      "assignedToId": "u4",
+      "company": "BlueMarketing",
+      "startTime": "2026-01-20T07:00:00.000Z",
+      "endTime": "2026-01-20T15:00:00.000Z",
+      "createdById": "u4",
+      "createdAt": "2026-01-19T17:35:16.764Z"
+    },
+    {
+      "id": "1768849883389",
+      "type": "shift",
+      "title": "Zmiana poranna",
+      "assignedToId": "u2",
+      "company": "SalesPro",
+      "startTime": "2026-01-21T07:00:00.000Z",
+      "endTime": "2026-01-21T13:00:00.000Z",
+      "createdById": "u6",
+      "createdAt": "2026-01-19T19:11:23.389Z"
+    },
+    {
+      "id": "1768849927646",
+      "type": "task",
+      "title": "prezentacja",
+      "assignedToId": "u2",
+      "company": "SalesPro",
+      "priority": "high",
+      "createdById": "u6",
+      "createdAt": "2026-01-19T19:12:07.646Z",
+      "status": "todo"
     }
   ],
   "attendance": [
@@ -939,6 +1012,14 @@
       "company": "BlueMarketing",
       "startTime": "2026-01-19T17:26:15.003Z",
       "endTime": "2026-01-19T17:26:52.912Z",
+      "active": false
+    },
+    {
+      "id": "1768844213432",
+      "userId": "u4",
+      "company": "BlueMarketing",
+      "startTime": "2026-01-19T17:36:53.432Z",
+      "endTime": "2026-01-19T17:36:59.171Z",
       "active": false
     }
   ]
